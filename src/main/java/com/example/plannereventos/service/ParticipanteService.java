@@ -3,6 +3,7 @@ package com.example.plannereventos.service;
 import com.example.plannereventos.dto.ParticipanteCreateRequest;
 import com.example.plannereventos.dto.ParticipanteResponse;
 import com.example.plannereventos.exception.EmailJaCadastradoException;
+import com.example.plannereventos.exception.ParticipanteNaoEncontradoException;
 import com.example.plannereventos.model.Participante;
 import com.example.plannereventos.repository.ParticipanteRepository;
 
@@ -30,5 +31,22 @@ public class ParticipanteService {
 
         Participante salvo = participanteRepository.save(participante);
         return ParticipanteResponse.fromEntity(salvo);
+    }
+
+    public ParticipanteResponse atualizar(UUID id, ParticipanteCreateRequest request) {
+        Participante participante = participanteRepository.findById(id)
+                .orElseThrow(() -> new ParticipanteNaoEncontradoException(id));
+
+        String novoEmail = request.getEmail().trim().toLowerCase();
+
+        if (!participante.getEmail().equalsIgnoreCase(novoEmail) && participanteRepository.existsByEmail(novoEmail)) {
+            throw new EmailJaCadastradoException(request.getEmail());
+        }
+
+        participante.setNomeCompleto(request.getNomeCompleto().trim());
+        participante.setEmail(novoEmail);
+
+        Participante atualizado = participanteRepository.save(participante);
+        return ParticipanteResponse.fromEntity(atualizado);
     }
 }
