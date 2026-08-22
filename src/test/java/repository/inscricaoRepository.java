@@ -75,5 +75,6 @@ public class InscricaoRepository {
         }
         return contador;
     }
+
 }
 
