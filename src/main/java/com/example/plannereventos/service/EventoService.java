@@ -1,4 +1,6 @@
 package com.example.plannereventos.service;
+import com.example.plannereventos.dto.EventoCreateRequest;
+import com.example.plannereventos.dto.EventoResponse;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.repository.EventoRepository;
 import org.springframework.stereotype.Service;
@@ -34,12 +36,29 @@ public class EventoService {
             throw new IllegalArgumentException("A capacidade do evento deve ser maior que 0");
         }
     }
-    public Evento cadastrar(Evento evento){
+
+    public EventoResponse cadastrar(EventoCreateRequest request) {
+        Evento evento = new Evento();
+        evento.setTitulo(request.getTitulo());
+        evento.setDescricao(request.getDescricao());
+        evento.setData(request.getData());
+        evento.setHorarioInicio(request.getHorarioInicio());
+        evento.setHorarioTermino(request.getHorarioTermino());
+        evento.setLocal(request.getLocal());
+        evento.setCapacidade(request.getCapacidade());
+        evento.setStatus("ATIVO");
+        evento.setRegistroCriacao(LocalDateTime.now());
+
+        Evento salvo = eventoRepository.salvar(evento);
+
+        return new EventoResponse(salvo);
+    }
+   /* public Evento cadastrar(Evento evento){
         evento.setStatus("ATIVO");
         evento.setRegistroCriacao(LocalDateTime.now());
         validarEvento(evento);
         return eventoRepository.salvar(evento);
-    }
+    }*/
     public Evento atualizar(Evento evento){
         Evento eventoExistente = eventoRepository.buscar(evento.getId());
         if(eventoExistente == null){

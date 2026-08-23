@@ -1,8 +1,13 @@
 package com.example.plannereventos.controller;
 
 
+import com.example.plannereventos.dto.EventoCreateRequest;
+import com.example.plannereventos.dto.EventoResponse;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.service.EventoService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,8 +27,9 @@ public class EventoController {
         return service.listar();
     }
     @PostMapping
-    public Evento cadastrar(@RequestBody Evento evento){
-        return service.cadastrar(evento);
+    public ResponseEntity<EventoResponse> cadastrar(@Valid @RequestBody EventoCreateRequest request) {
+        EventoResponse response = service.cadastrar(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     @PutMapping("/{id}")
     public Evento atualizar(@PathVariable int id, @RequestBody Evento evento) {
