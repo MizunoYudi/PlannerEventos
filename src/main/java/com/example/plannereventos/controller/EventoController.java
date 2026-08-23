@@ -35,7 +35,8 @@ public class EventoController {
         return ResponseEntity.ok(response);
     }
     @PatchMapping("/{id}/cancelamento")
-    public Evento cancelar(@PathVariable int id){
-        return service.cancelar(id);
+    public ResponseEntity<EventoResponse> cancelar(@PathVariable int id) {
+        EventoResponse response = service.cancelar(id);
+        return ResponseEntity.ok(response);
     }
 }

@@ -54,12 +54,6 @@ public class EventoService {
 
         return new EventoResponse(salvo);
     }
-   /* public Evento cadastrar(Evento evento){
-        evento.setStatus("ATIVO");
-        evento.setRegistroCriacao(LocalDateTime.now());
-        validarEvento(evento);
-        return eventoRepository.salvar(evento);
-    }*/
    public EventoResponse atualizar(int id, EventoUpdateRequest request) {
        Evento existente = eventoRepository.buscar(id);
        if (existente == null) {
@@ -77,11 +71,12 @@ public class EventoService {
        Evento atualizado = eventoRepository.atualizar(existente);
        return new EventoResponse(atualizado);
    }
-    public Evento cancelar(int id){
-        if(eventoRepository.buscar(id) == null){
+    public EventoResponse cancelar(int id) {
+        if (eventoRepository.buscar(id) == null) {
             throw new IllegalArgumentException("evento não encontrado");
         }
-        return eventoRepository.cancelar(id);
+        Evento cancelado = eventoRepository.cancelar(id);
+        return new EventoResponse(cancelado);
     }
     public List<Evento> listar(){
         return eventoRepository.listar();
