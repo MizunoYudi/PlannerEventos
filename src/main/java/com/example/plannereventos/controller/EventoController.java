@@ -29,22 +29,13 @@ public class EventoController {
         EventoResponse response = eventoService.cadastrar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
-    // POST /api/eventos/{eventoId}/inscricoes
-    @PostMapping("/{eventoId}/inscricoes")
-    public ResponseEntity<?> realizarInscricao(
-            @PathVariable Long eventoId,
-            @RequestBody InscricaoCreateRequest request) {
-        @RequestBody InscricaoCreateRequest request){
-            try {
-                Inscricao inscricaoCriada = inscricaoService.inscrever(eventoId, request);
-                return ResponseEntity.status(HttpStatus.CREATED).body(inscricaoCriada); // 201
-            } catch (RuntimeException e) {
-                if (e.getMessage().contains("não encontrado")) {
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage()); // 404
-                }
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage()); // 400
-            }
-        }
+    @PutMapping("/{id}")
+    public ResponseEntity<EventoResponse> atualizar(@PathVariable int id, @Valid @RequestBody EventoUpdateRequest request) {
+        EventoResponse response = service.atualizar(id, request);
+        return ResponseEntity.ok(response);
+    }
+    @PatchMapping("/{id}/cancelamento")
+    public Evento cancelar(@PathVariable int id){
+        return service.cancelar(id);
     }
 }

@@ -1,6 +1,7 @@
 package com.example.plannereventos.service;
 import com.example.plannereventos.dto.EventoCreateRequest;
 import com.example.plannereventos.dto.EventoResponse;
+import com.example.plannereventos.dto.EventoUpdateRequest;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.repository.EventoRepository;
 import org.springframework.stereotype.Service;
@@ -59,16 +60,23 @@ public class EventoService {
         validarEvento(evento);
         return eventoRepository.salvar(evento);
     }*/
-    public Evento atualizar(Evento evento){
-        Evento eventoExistente = eventoRepository.buscar(evento.getId());
-        if(eventoExistente == null){
-            throw new IllegalArgumentException("evento não encontrado");
-        }
-        evento.setStatus(eventoExistente.getStatus());
-        evento.setRegistroCriacao(eventoExistente.getRegistroCriacao());
-        validarEvento(evento);
-        return eventoRepository.atualizar(evento);
-    }
+   public EventoResponse atualizar(int id, EventoUpdateRequest request) {
+       Evento existente = eventoRepository.buscar(id);
+       if (existente == null) {
+           throw new IllegalArgumentException("evento não encontrado");
+       }
+
+       existente.setTitulo(request.getTitulo());
+       existente.setDescricao(request.getDescricao());
+       existente.setData(request.getData());
+       existente.setHorarioInicio(request.getHorarioInicio());
+       existente.setHorarioTermino(request.getHorarioTermino());
+       existente.setLocal(request.getLocal());
+       existente.setCapacidade(request.getCapacidade());
+
+       Evento atualizado = eventoRepository.atualizar(existente);
+       return new EventoResponse(atualizado);
+   }
     public Evento cancelar(int id){
         if(eventoRepository.buscar(id) == null){
             throw new IllegalArgumentException("evento não encontrado");
