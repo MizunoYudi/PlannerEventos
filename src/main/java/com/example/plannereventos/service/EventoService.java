@@ -33,7 +33,7 @@ public class EventoService {
         if (!evento.getHorarioTermino().isAfter(evento.getHorarioInicio())) {
             throw new IllegalArgumentException(" O horário de término deve ser posterior ao horário de início. ");
         }
-        if(evento.getCapacidade() <= 0 ){
+        if(evento.getCapacidadeMaxima() <= 0 ){
             throw new IllegalArgumentException("A capacidade do evento deve ser maior que 0");
         }
     }
@@ -78,6 +78,7 @@ public class EventoService {
         Evento cancelado = eventoRepository.cancelar(id);
         return new EventoResponse(cancelado);
     }
+
     public List<Evento> listar(){
         return eventoRepository.listar();
     }

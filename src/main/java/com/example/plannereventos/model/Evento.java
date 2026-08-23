@@ -13,7 +13,7 @@ public class Evento {
     private LocalDateTime horarioInicio;
     private LocalDateTime horarioTermino;
     private String local;
-    private int capacidade;
+    private int capacidadeMaxima;
     private String status;
     private LocalDateTime registroCriacao;
 
@@ -28,7 +28,7 @@ public class Evento {
                   LocalDateTime horarioInicio,
                   LocalDateTime horarioTermino,
                   String local,
-                  int capacidade,
+                  int capacidadeMaxima,
                   String status,
                   LocalDateTime registroCriacao) {
         this.id = id;
@@ -38,14 +38,12 @@ public class Evento {
         this.horarioInicio = horarioInicio;
         this.horarioTermino = horarioTermino;
         this.local = local;
-        this.capacidade = capacidade;
+        this.capacidadeMaxima = capacidadeMaxima;
         this.status = status;
         this.registroCriacao = registroCriacao;
     }
 
-    public int getId() {
-        return id;
-    }
+    public int getId() { return id; }
 
     public void setId(int id) {
         this.id = id;
@@ -99,12 +97,12 @@ public class Evento {
         this.local = local;
     }
 
-    public int getCapacidade() {
-        return capacidade;
+    public int getCapacidadeMaxima() {
+        return capacidadeMaxima;
     }
 
-    public void setCapacidade(int capacidade) {
-        this.capacidade = capacidade;
+    public void setCapacidadeMaxima(int capacidadeMaxima) {
+        this.capacidadeMaxima = capacidadeMaxima;
     }
 
     public String getStatus() {

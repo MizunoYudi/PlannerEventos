@@ -17,19 +17,22 @@ public class EventoRepository {
         eventos.add(evento);
         return evento;
     }
+
     //listar todos os eventos
     public List<Evento> listar(){
         return eventos;
     }
+
     //buscando um evento pelo id correspondente
-    public Evento buscar(int id) {
+    public Evento buscarPorId(int id) {
         for(Evento evento : eventos){
             if(evento.getId() ==  id){
                 return evento;
-            };
+            }
         }
         return null;
     }
+
     //atualizando um evento através do id da lista e comparando se é igual ao id do evento passado por parametro
     public Evento atualizar(Evento evento){
         for (int i = 0; i < eventos.size(); i++){
@@ -43,7 +46,7 @@ public class EventoRepository {
 
     //cancelando um evento.... buscando pelo id e atualizando o 'status' do evento
     public Evento cancelar(int id) {
-        Evento evento = buscar(id);
+        Evento evento = buscarPorId(id);
         if(evento != null){
             evento.setStatus("CANCELADO");
             atualizar(evento);

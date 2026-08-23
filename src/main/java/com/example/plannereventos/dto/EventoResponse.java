@@ -14,7 +14,7 @@ public class EventoResponse {
     private LocalTime horarioInicio;
     private LocalTime horarioTermino;
     private String local;
-    private int capacidade;
+    private int capacidadeMaxima;
     private String status;
     private LocalDateTime registroCriacao;
 
@@ -29,48 +29,8 @@ public class EventoResponse {
         this.horarioInicio = LocalTime.from(evento.getHorarioInicio());
         this.horarioTermino = LocalTime.from(evento.getHorarioTermino());
         this.local = evento.getLocal();
-        this.capacidade = evento.getCapacidade();
+        this.capacidadeMaxima = evento.getCapacidadeMaxima();
         this.status = evento.getStatus();
         this.registroCriacao = evento.getRegistroCriacao();
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getTitulo() {
-        return titulo;
-    }
-
-    public String getDescricao() {
-        return descricao;
-    }
-
-    public LocalDate getData() {
-        return data;
-    }
-
-    public LocalTime getHorarioInicio() {
-        return horarioInicio;
-    }
-
-    public LocalTime getHorarioTermino() {
-        return horarioTermino;
-    }
-
-    public String getLocal() {
-        return local;
-    }
-
-    public int getCapacidade() {
-        return capacidade;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public LocalDateTime getRegistroCriacao() {
-        return registroCriacao;
     }
 }
