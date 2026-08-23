@@ -9,6 +9,7 @@ import com.example.plannereventos.repository.ParticipanteRepository;
 
 import  org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -48,5 +49,18 @@ public class ParticipanteService {
 
         Participante atualizado = participanteRepository.save(participante);
         return ParticipanteResponse.fromEntity(atualizado);
+    }
+
+    public List<ParticipanteResponse> listarTodos() {
+        return participanteRepository.findAll()
+                .stream()
+                .map(ParticipanteResponse::fromEntity)
+                .toList();
+    }
+
+    public ParticipanteResponse buscarPorId(UUID id) {
+        Participante participante = participanteRepository.findById(id)
+                .orElseThrow(() -> new ParticipanteNaoEncontradoException(id));
+        return ParticipanteResponse.fromEntity(participante);
     }
 }

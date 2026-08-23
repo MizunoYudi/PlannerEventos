@@ -48,4 +48,16 @@ public class ParticipanteController {
         ParticipanteResponse response = participanteService.atualizar(id, request);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping
+    public ResponseEntity<List<ParticipanteResponse>> listarTodos() {
+        List<ParticipanteResponse> participantes = participanteService.listarTodos();
+        return ResponseEntity.ok(participantes);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ParticipanteResponse> buscarPorId(@PathVariable UUID id) {
+        ParticipanteResponse participante = participanteService.buscarPorId(id);
+        return ResponseEntity.ok(participante);
+    }
 }
