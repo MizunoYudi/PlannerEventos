@@ -26,4 +26,14 @@ public class ParticipanteController {
         ParticipanteResponse response = participanteService.cadastrar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @GetMapping("/{participanteId}/inscricoes")
+    public ResponseEntity<?> listarInscricoesDoParticipante(@PathVariable Long participanteId) {
+        try {
+            List<Inscricao> lista = inscricaoService.listarPorParticipante(participanteId);
+            return ResponseEntity.ok(lista); // 200 OK
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage()); // 404 Not Found
+        }
+    }
 }
