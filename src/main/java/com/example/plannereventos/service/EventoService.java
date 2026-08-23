@@ -1,5 +1,7 @@
 package com.example.plannereventos.service;
 import com.example.plannereventos.dto.EventoCreateRequest;
+import com.example.plannereventos.dto.EventoResponse;
+import com.example.plannereventos.dto.ParticipanteResponse;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.repository.EventoRepository;
 import org.springframework.stereotype.Service;
@@ -36,7 +38,7 @@ public class EventoService {
         }
     }
 
-    public Evento cadastrar(EventoCreateRequest request){
+    public EventoResponse cadastrar(EventoCreateRequest request){
         Evento evento = new Evento();
 
         evento.setTitulo(request.getTitulo());
@@ -49,7 +51,8 @@ public class EventoService {
         evento.setRegistroCriacao(LocalDateTime.now());
         validarEvento(evento);
 
-        return eventoRepository.salvar(evento);
+        eventoRepository.salvar(evento);
+        return new EventoResponse(evento);
     }
 
     public Evento atualizar(Evento evento){
