@@ -39,16 +39,18 @@ public class ParticipanteService {
                 .orElseThrow(() -> new ParticipanteNaoEncontradoException(id));
 
         String novoEmail = request.getEmail().trim().toLowerCase();
+        String emailAtual = participante.getEmail().trim().toLowerCase();
 
-        if (!participante.getEmail().equalsIgnoreCase(novoEmail) && participanteRepository.existsByEmail(novoEmail)) {
-            throw new EmailJaCadastradoException(request.getEmail());
+        if (!emailAtual.equalsIgnoreCase(novoEmail)) {
+            if (participanteRepository.existsByEmail(novoEmail)) {
+                throw new EmailJaCadastradoException(request.getEmail());
+            }
         }
-
         participante.setNomeCompleto(request.getNomeCompleto().trim());
         participante.setEmail(novoEmail);
 
-        Participante atualizado = participanteRepository.save(participante);
-        return ParticipanteResponse.fromEntity(atualizado);
+        Participante salvo = participanteRepository.save(participante);
+        return ParticipanteResponse.fromEntity(salvo);
     }
 
     public List<ParticipanteResponse> listarTodos() {
