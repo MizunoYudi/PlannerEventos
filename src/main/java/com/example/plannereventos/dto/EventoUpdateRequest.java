@@ -30,7 +30,7 @@ public class EventoUpdateRequest {
     private String local;
 
     @Positive(message = "A capacidade deve ser maior que 0")
-    private int capacidade;
+    private int capacidadeMaxima;
 
     @AssertTrue(message = "O horário de término deve ser posterior ao horário de início")
     public boolean isHorarioValido() {
@@ -50,6 +50,5 @@ public class EventoUpdateRequest {
     public void setHorarioTermino(LocalDateTime horarioTermino) { this.horarioTermino = horarioTermino; }
     public String getLocal() { return local; }
     public void setLocal(String local) { this.local = local; }
-    public int getCapacidade() { return capacidade; }
-    public void setCapacidade(int capacidade) { this.capacidade = capacidade; }
+    public int getCapacidadeMaxima() { return capacidadeMaxima; }
 }

@@ -43,10 +43,10 @@ public class EventoService {
         evento.setTitulo(request.getTitulo());
         evento.setDescricao(request.getDescricao());
         evento.setData(request.getData());
-        evento.setHorarioInicio(request.getHorarioInicio());
-        evento.setHorarioTermino(request.getHorarioTermino());
+        evento.setHorarioInicio(LocalDateTime.from(request.getHorarioInicio()));
+        evento.setHorarioTermino(LocalDateTime.from(request.getHorarioTermino()));
         evento.setLocal(request.getLocal());
-        evento.setCapacidade(request.getCapacidade());
+        evento.setCapacidadeMaxima(request.getCapacidadeMaxima());
         evento.setStatus("ATIVO");
         evento.setRegistroCriacao(LocalDateTime.now());
 
@@ -55,7 +55,7 @@ public class EventoService {
         return new EventoResponse(salvo);
     }
    public EventoResponse atualizar(int id, EventoUpdateRequest request) {
-       Evento existente = eventoRepository.buscar(id);
+       Evento existente = eventoRepository.buscarPorId(id);
        if (existente == null) {
            throw new IllegalArgumentException("evento não encontrado");
        }
@@ -66,13 +66,13 @@ public class EventoService {
        existente.setHorarioInicio(request.getHorarioInicio());
        existente.setHorarioTermino(request.getHorarioTermino());
        existente.setLocal(request.getLocal());
-       existente.setCapacidade(request.getCapacidade());
+       existente.setCapacidadeMaxima(request.getCapacidadeMaxima());
 
        Evento atualizado = eventoRepository.atualizar(existente);
        return new EventoResponse(atualizado);
    }
     public EventoResponse cancelar(int id) {
-        if (eventoRepository.buscar(id) == null) {
+        if (eventoRepository.buscarPorId(id) == null) {
             throw new IllegalArgumentException("evento não encontrado");
         }
         Evento cancelado = eventoRepository.cancelar(id);

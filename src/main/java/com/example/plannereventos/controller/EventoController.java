@@ -2,6 +2,7 @@ package com.example.plannereventos.controller;
 
 import com.example.plannereventos.dto.EventoCreateRequest;
 import com.example.plannereventos.dto.EventoResponse;
+import com.example.plannereventos.dto.EventoUpdateRequest;
 import com.example.plannereventos.dto.InscricaoCreateRequest;
 import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.service.EventoService;
@@ -31,12 +32,12 @@ public class EventoController {
     }
     @PutMapping("/{id}")
     public ResponseEntity<EventoResponse> atualizar(@PathVariable int id, @Valid @RequestBody EventoUpdateRequest request) {
-        EventoResponse response = service.atualizar(id, request);
+        EventoResponse response = eventoService.atualizar(id, request);
         return ResponseEntity.ok(response);
     }
     @PatchMapping("/{id}/cancelamento")
     public ResponseEntity<EventoResponse> cancelar(@PathVariable int id) {
-        EventoResponse response = service.cancelar(id);
+        EventoResponse response = eventoService.cancelar(id);
         return ResponseEntity.ok(response);
     }
 }
