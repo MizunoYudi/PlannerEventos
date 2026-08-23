@@ -1,4 +1,4 @@
-package dto;
+package com.example.plannereventos.dto;
 
 import model.Inscricao;
 import java.time.LocalDateTime;

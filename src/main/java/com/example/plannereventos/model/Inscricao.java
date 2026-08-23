@@ -1,3 +1,4 @@
+package com.example.plannereventos.model;
 import java.time.LocalDateTime;
 
 public class Inscricao {
@@ -7,7 +8,7 @@ public class Inscricao {
     private LocalDateTime dataInscricao;
     private String status = "CONFIRMADA";
 
-    public Incricao(){
+    public Inscricao(){
 
     }
 

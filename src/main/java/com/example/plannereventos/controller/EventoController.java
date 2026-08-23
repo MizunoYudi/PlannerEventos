@@ -1,11 +1,11 @@
-package controller;
+package com.example.plannereventos.controller;
 
-import dto.EventoCreateRequest;
-import dto.EventoResponse;
-import dto.InscricaoCreateRequest;
-import model.Inscricao;
-import service.EventoService;
-import service.InscricaoService;
+import com.example.plannereventos.dto.EventoCreateRequest;
+import com.example.plannereventos.dto.EventoResponse;
+import com.example.plannereventos.dto.InscricaoCreateRequest;
+import com.example.plannereventos.model.Inscricao;
+import com.example.plannereventos.service.EventoService;
+import com.example.plannereventos.service.InscricaoService;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

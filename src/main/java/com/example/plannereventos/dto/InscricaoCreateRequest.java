@@ -1,4 +1,4 @@
-package dto;
+package com.example.plannereventos.dto;
 
 public class InscricaoCreateRequest {
     private Long participanteId;

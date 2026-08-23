@@ -1,18 +1,18 @@
-package service;
+package com.example.plannereventos.service;
 
-import dto.InscricaoResponse;
-import dto.InscricaoCreateRequest;
-import model.Participante;
-import repository.InscricaoRepository;
+import com.example.plannereventos.dto.InscricaoResponse;
+import com.example.plannereventos.dto.InscricaoCreateRequest;
+import com.example.plannereventos.model.Participante;
+import com.example.plannereventos.repository.InscricaoRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.List;
-import model.Evento;
-import model.Inscricao;
-import repository.EventoRepository;
-import repository.ParticipanteRepository;
+import com.example.plannereventos.model.Evento;
+import com.example.plannereventos.model.Inscricao;
+import com.example.plannereventos.repository.EventoRepository;
+import com.example.plannereventos.repository.ParticipanteRepository;
 
 @Service
 public class InscricaoService {
