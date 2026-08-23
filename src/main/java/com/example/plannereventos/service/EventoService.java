@@ -1,7 +1,7 @@
 package com.example.plannereventos.service;
 import com.example.plannereventos.dto.EventoCreateRequest;
 import com.example.plannereventos.dto.EventoResponse;
-import com.example.plannereventos.dto.ParticipanteResponse;
+import com.example.plannereventos.dto.EventoUpdateRequest;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.repository.EventoRepository;
 import org.springframework.stereotype.Service;
@@ -38,41 +38,45 @@ public class EventoService {
         }
     }
 
-    public EventoResponse cadastrar(EventoCreateRequest request){
+    public EventoResponse cadastrar(EventoCreateRequest request) {
         Evento evento = new Evento();
-
         evento.setTitulo(request.getTitulo());
         evento.setDescricao(request.getDescricao());
         evento.setData(request.getData());
-        evento.setHorarioInicio(LocalDateTime.from(request.getHorarioInicio()));
-        evento.setHorarioTermino(LocalDateTime.from(request.getHorarioTermino()));
+        evento.setHorarioInicio(request.getHorarioInicio());
+        evento.setHorarioTermino(request.getHorarioTermino());
         evento.setLocal(request.getLocal());
+        evento.setCapacidade(request.getCapacidade());
         evento.setStatus("ATIVO");
         evento.setRegistroCriacao(LocalDateTime.now());
-        validarEvento(evento);
 
-        eventoRepository.salvar(evento);
-        return new EventoResponse(evento);
+        Evento salvo = eventoRepository.salvar(evento);
+
+        return new EventoResponse(salvo);
     }
+   public EventoResponse atualizar(int id, EventoUpdateRequest request) {
+       Evento existente = eventoRepository.buscar(id);
+       if (existente == null) {
+           throw new IllegalArgumentException("evento não encontrado");
+       }
 
-    public Evento atualizar(Evento evento){
-        Evento eventoExistente = eventoRepository.buscarPorId(evento.getId());
+       existente.setTitulo(request.getTitulo());
+       existente.setDescricao(request.getDescricao());
+       existente.setData(request.getData());
+       existente.setHorarioInicio(request.getHorarioInicio());
+       existente.setHorarioTermino(request.getHorarioTermino());
+       existente.setLocal(request.getLocal());
+       existente.setCapacidade(request.getCapacidade());
 
-        if(eventoExistente == null){
+       Evento atualizado = eventoRepository.atualizar(existente);
+       return new EventoResponse(atualizado);
+   }
+    public EventoResponse cancelar(int id) {
+        if (eventoRepository.buscar(id) == null) {
             throw new IllegalArgumentException("evento não encontrado");
         }
-
-        evento.setStatus(eventoExistente.getStatus());
-        evento.setRegistroCriacao(eventoExistente.getRegistroCriacao());
-        validarEvento(evento);
-        return eventoRepository.atualizar(evento);
-    }
-
-    public Evento cancelar(int id){
-        if(eventoRepository.buscarPorId(id) == null){
-            throw new IllegalArgumentException("evento não encontrado");
-        }
-        return eventoRepository.cancelar(id);
+        Evento cancelado = eventoRepository.cancelar(id);
+        return new EventoResponse(cancelado);
     }
 
     public List<Evento> listar(){
