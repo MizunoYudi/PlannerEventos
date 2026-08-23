@@ -17,6 +17,7 @@ public class EventoRepository {
         eventos.add(evento);
         return evento;
     }
+
     //listar todos os eventos
     public List<Evento> listar(){
         return eventos;
