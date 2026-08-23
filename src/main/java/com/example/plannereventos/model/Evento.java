@@ -1,4 +1,7 @@
-package model;
+package com.example.plannereventos.model;
+import com.fasterxml.jackson.annotation.JsonCreator;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 
@@ -6,18 +9,22 @@ public class Evento {
     private int id;
     private String titulo;
     private String descricao;
-    private Date data;
-    private LocalDateTime HorarioInicio;
-    private LocalDateTime HorarioTermino;
+    private LocalDate data;
+    private LocalDateTime horarioInicio;
+    private LocalDateTime horarioTermino;
     private String local;
     private int capacidade;
     private String status;
     private LocalDateTime registroCriacao;
 
+    @JsonCreator
+    public Evento() {
+    }
+
     public Evento(int id,
                   String titulo,
                   String descricao,
-                  Date data,
+                  LocalDate data,
                   LocalDateTime horarioInicio,
                   LocalDateTime horarioTermino,
                   String local,
@@ -28,8 +35,8 @@ public class Evento {
         this.titulo = titulo;
         this.descricao = descricao;
         this.data = data;
-        HorarioInicio = horarioInicio;
-        HorarioTermino = horarioTermino;
+        this.horarioInicio = horarioInicio;
+        this.horarioTermino = horarioTermino;
         this.local = local;
         this.capacidade = capacidade;
         this.status = status;
@@ -60,28 +67,36 @@ public class Evento {
         this.descricao = descricao;
     }
 
-    public Date getData() {
+    public LocalDate getData() {
+        return data;
+    }
+
+    public void setData(LocalDate data) {
+        this.data = data;
+    }
+
+    /* public Date getData() {
         return data;
     }
 
     public void setData(Date data) {
         this.data = data;
-    }
+    }*/
 
     public LocalDateTime getHorarioInicio() {
-        return HorarioInicio;
+        return horarioInicio;
     }
 
     public void setHorarioInicio(LocalDateTime horarioInicio) {
-        HorarioInicio = horarioInicio;
+        this.horarioInicio = horarioInicio;
     }
 
     public LocalDateTime getHorarioTermino() {
-        return HorarioTermino;
+        return horarioTermino;
     }
 
     public void setHorarioTermino(LocalDateTime horarioTermino) {
-        HorarioTermino = horarioTermino;
+        this.horarioTermino = horarioTermino;
     }
 
     public String getLocal() {
