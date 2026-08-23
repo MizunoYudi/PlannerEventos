@@ -1,4 +1,5 @@
 package com.example.plannereventos.service;
+import com.example.plannereventos.dto.EventoCreateRequest;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.repository.EventoRepository;
 import org.springframework.stereotype.Service;
@@ -30,32 +31,47 @@ public class EventoService {
         if (!evento.getHorarioTermino().isAfter(evento.getHorarioInicio())) {
             throw new IllegalArgumentException(" O horário de término deve ser posterior ao horário de início. ");
         }
-        if(evento.getCapacidade() <= 0 ){
+        if(evento.getCapacidadeMaxima() <= 0 ){
             throw new IllegalArgumentException("A capacidade do evento deve ser maior que 0");
         }
     }
-    public Evento cadastrar(Evento evento){
+
+    public Evento cadastrar(EventoCreateRequest request){
+        Evento evento = new Evento();
+
+        evento.setTitulo(request.getTitulo());
+        evento.setDescricao(request.getDescricao());
+        evento.setData(request.getData());
+        evento.setHorarioInicio(LocalDateTime.from(request.getHorarioInicio()));
+        evento.setHorarioTermino(LocalDateTime.from(request.getHorarioTermino()));
+        evento.setLocal(request.getLocal());
         evento.setStatus("ATIVO");
         evento.setRegistroCriacao(LocalDateTime.now());
         validarEvento(evento);
+
         return eventoRepository.salvar(evento);
     }
+
     public Evento atualizar(Evento evento){
-        Evento eventoExistente = eventoRepository.buscar(evento.getId());
+        Evento eventoExistente = eventoRepository.buscarPorId(evento.getId());
+
         if(eventoExistente == null){
             throw new IllegalArgumentException("evento não encontrado");
         }
+
         evento.setStatus(eventoExistente.getStatus());
         evento.setRegistroCriacao(eventoExistente.getRegistroCriacao());
         validarEvento(evento);
         return eventoRepository.atualizar(evento);
     }
+
     public Evento cancelar(int id){
-        if(eventoRepository.buscar(id) == null){
+        if(eventoRepository.buscarPorId(id) == null){
             throw new IllegalArgumentException("evento não encontrado");
         }
         return eventoRepository.cancelar(id);
     }
+
     public List<Evento> listar(){
         return eventoRepository.listar();
     }
