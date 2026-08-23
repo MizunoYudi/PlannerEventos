@@ -3,6 +3,7 @@ package com.example.plannereventos.controller;
 
 import com.example.plannereventos.dto.EventoCreateRequest;
 import com.example.plannereventos.dto.EventoResponse;
+import com.example.plannereventos.dto.EventoUpdateRequest;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.service.EventoService;
 import jakarta.validation.Valid;
@@ -32,9 +33,9 @@ public class EventoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     @PutMapping("/{id}")
-    public Evento atualizar(@PathVariable int id, @RequestBody Evento evento) {
-        evento.setId(id);
-        return service.atualizar(evento);
+    public ResponseEntity<EventoResponse> atualizar(@PathVariable int id, @Valid @RequestBody EventoUpdateRequest request) {
+        EventoResponse response = service.atualizar(id, request);
+        return ResponseEntity.ok(response);
     }
     @PatchMapping("/{id}/cancelamento")
     public Evento cancelar(@PathVariable int id){
