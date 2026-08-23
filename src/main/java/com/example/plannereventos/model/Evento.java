@@ -75,14 +75,6 @@ public class Evento {
         this.data = data;
     }
 
-    /* public Date getData() {
-        return data;
-    }
-
-    public void setData(Date data) {
-        this.data = data;
-    }*/
-
     public LocalDateTime getHorarioInicio() {
         return horarioInicio;
     }
