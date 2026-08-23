@@ -1,7 +1,9 @@
+package com.example.plannereventos.repository;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import br.ifsp.boituva.gestaoeventos.model.Inscricao;
+import com.example.plannereventos.model.Inscricao;
 import org.springframework.stereotype.Repository;
 
 @Repository
