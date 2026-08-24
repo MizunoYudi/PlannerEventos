@@ -2,6 +2,7 @@ package com.example.plannereventos.repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import com.example.plannereventos.model.Inscricao;
 import org.springframework.stereotype.Repository;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Repository;
 
 public class InscricaoRepository {
     private List<Inscricao> inscricoes = new ArrayList<>();
-    private Long proximoId = 1L; //L porque é long
+    private int proximoId = 1;
 
     //Cadastrar
     public Inscricao cadastrar(Inscricao inscricao) {
@@ -27,16 +28,16 @@ public class InscricaoRepository {
     }
 
     //Buscar
-    public Inscricao buscarPorId(Long id) {
+    public Inscricao buscarPorId(int id) {
         for (Inscricao p : inscricoes) {
-            if (p.getId().equals(id)) {
+            if (p.getId() == id) {
                 return p;
             }
         }
         return null;
     }
     //cancelar
-    public boolean cancelar(Long id) {
+    public boolean cancelar(int id) {
         Inscricao inscricao = buscarPorId(id);
         if (inscricao != null) {
             inscricao.setStatus("CANCELADA");
@@ -46,10 +47,10 @@ public class InscricaoRepository {
     }
 
     //Listar inscricoes do evento
-    public List<Inscricao> listarPorEvento(Long idEvento) {
+    public List<Inscricao> listarPorEvento(int idEvento) {
         List<Inscricao> filtradas = new ArrayList<>();
         for (Inscricao p : inscricoes) {
-            if (p.getIdEvento().equals(idEvento)) {
+            if (p.getIdEvento() == idEvento) {
                 filtradas.add(p);
             }
         }
@@ -57,7 +58,7 @@ public class InscricaoRepository {
     }
 
     //Listar inscricoes do participante
-    public List<Inscricao> listarPorParticipante(Long participanteId) {
+    public List<Inscricao> listarPorParticipante(UUID participanteId) {
         List<Inscricao> filtradas = new ArrayList<>();
         for (Inscricao p : inscricoes) {
             if (p.getParticipanteId().equals(participanteId)) {
@@ -68,10 +69,10 @@ public class InscricaoRepository {
     }
 
     //Contar vagas ocupadas
-    public int contarConfirmadasPorEvento(Long idEvento) {
+    public int contarConfirmadasPorEvento(int idEvento) {
         int contador = 0;
         for (Inscricao p : inscricoes) {
-            if (p.getIdEvento().equals(idEvento) && "CONFIRMADA".equalsIgnoreCase(p.getStatus())) {
+            if (p.getIdEvento() == idEvento && "CONFIRMADA".equalsIgnoreCase(p.getStatus())) {
                 contador++;
             }
         }

@@ -1,18 +1,18 @@
 package com.example.plannereventos.model;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class Inscricao {
-    private Long id;
-    private Long idEvento;
-    private Long participanteId;
+    private int id;
+    private int idEvento;
+    private UUID participanteId;
     private LocalDateTime dataInscricao;
     private String status = "CONFIRMADA";
 
     public Inscricao(){
-
     }
 
-    public Inscricao(Long id, Long idEvento, Long participanteId, LocalDateTime dataInscricao, String status){
+    public Inscricao(int id, int idEvento, UUID participanteId, LocalDateTime dataInscricao, String status){
         this.id = id;
         this.dataInscricao = dataInscricao;
         this.idEvento = idEvento;
@@ -24,15 +24,15 @@ public class Inscricao {
         return dataInscricao;
     }
 
-    public Long getId() {
+    public int getId() {
         return id;
     }
 
-    public Long getIdEvento() {
+    public int getIdEvento() {
         return idEvento;
     }
 
-    public Long getParticipanteId() {
+    public UUID getParticipanteId() {
         return participanteId;
     }
 
@@ -44,15 +44,13 @@ public class Inscricao {
         this.dataInscricao = dataInscricao;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public void setId(int id) { this.id = id; }
 
-    public void setIdEvento(Long idEvento) {
+    public void setIdEvento(int idEvento) {
         this.idEvento = idEvento;
     }
 
-    public void setParticipanteId(Long participanteId) {
+    public void setParticipanteId(UUID participanteId) {
         this.participanteId = participanteId;
     }
 

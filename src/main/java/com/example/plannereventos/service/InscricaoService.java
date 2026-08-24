@@ -7,6 +7,7 @@ import com.example.plannereventos.repository.InscricaoRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 import java.util.List;
 import com.example.plannereventos.model.Evento;
@@ -27,21 +28,21 @@ public class InscricaoService {
         this.participanteRepository = participanteRepository;
     }
 
-    public List<Inscricao> listarPorEvento(Long eventoId) {
+    public List<Inscricao> listarPorEvento(int eventoId) {
         if (eventoRepository.buscarPorId(eventoId) == null) {
             throw new RuntimeException("Evento não encontrado.");
         }
         return inscricaoRepository.listarPorEvento(eventoId);
     }
 
-    public List<Inscricao> listarPorParticipante(Long participanteId) {
+    public List<Inscricao> listarPorParticipante(UUID participanteId) {
         if (participanteRepository.buscarPorId(participanteId) == null) {
             throw new RuntimeException("Participante não encontrado.");
         }
         return inscricaoRepository.listarPorParticipante(participanteId);
     }
 
-    public Inscricao buscarPorEventoEParticipante(Long eventoId, Long participanteId) {
+    public Inscricao buscarPorEventoEParticipante(int eventoId, UUID participanteId) {
         if (eventoRepository.buscarPorId(eventoId) == null) {
             throw new RuntimeException("Evento não encontrado.");
         }
@@ -49,20 +50,20 @@ public class InscricaoService {
             throw new RuntimeException("Participante não encontrado.");
         }
         for (Inscricao inscricao : inscricaoRepository.listar()) {
-            if (inscricao.getIdEvento().equals(eventoId) && inscricao.getParticipanteId().equals(participanteId)) {
+            if (inscricao.getIdEvento() == eventoId && inscricao.getParticipanteId() == participanteId) {
                 return inscricao;
             }
         }
         throw new RuntimeException("Inscrição não encontrada para este participante no evento.");
     }
 
-    public Inscricao inscrever(Long eventoId, InscricaoCreateRequest request) {
+    public Inscricao inscrever(int eventoId, InscricaoCreateRequest request) {
         Evento evento = eventoRepository.buscarPorId(eventoId);
         if (evento == null) {
             throw new RuntimeException("Evento não encontrado.");
         }
 
-        Long participanteId = request.getParticipanteId();
+        UUID participanteId = request.getParticipanteId();
         if (participanteRepository.buscarPorId(participanteId) == null) {
             throw new RuntimeException("Participante não encontrado.");
         }
@@ -71,7 +72,7 @@ public class InscricaoService {
             throw new RuntimeException("Não é permitido realizar inscrições em eventos cancelados.");
         }
 
-        LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), evento.getHorarioInicio());
+        LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), LocalTime.from(evento.getHorarioInicio()));
         if (LocalDateTime.now().isAfter(inicioEvento)) {
             throw new RuntimeException("Não é permitido realizar inscrição após o início do evento.");
         }

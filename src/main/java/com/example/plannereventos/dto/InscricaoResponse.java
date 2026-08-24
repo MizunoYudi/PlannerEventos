@@ -2,18 +2,19 @@ package com.example.plannereventos.dto;
 
 import com.example.plannereventos.model.Inscricao;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class InscricaoResponse {
-    private Long id;
-    private Long eventoId;
-    private Long participanteId;
+    private int id;
+    private int eventoId;
+    private UUID participanteId;
     private LocalDateTime dataHoraInscricao;
     private String status;
 
     public InscricaoResponse() {
     }
 
-    public InscricaoResponse(Long id, Long eventoId, Long participanteId, LocalDateTime dataHoraInscricao, String status) {
+    public InscricaoResponse(int id, int eventoId, UUID participanteId, LocalDateTime dataHoraInscricao, String status) {
         this.id = id;
         this.eventoId = eventoId;
         this.participanteId = participanteId;
@@ -29,27 +30,27 @@ public class InscricaoResponse {
         this.status = inscricao.getStatus();
     }
 
-    public Long getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(int id) {
         this.id = id;
     }
 
-    public Long getEventoId() {
+    public int getEventoId() {
         return eventoId;
     }
 
-    public void setEventoId(Long eventoId) {
+    public void setEventoId(int eventoId) {
         this.eventoId = eventoId;
     }
 
-    public Long getParticipanteId() {
+    public UUID getParticipanteId() {
         return participanteId;
     }
 
-    public void setParticipanteId(Long participanteId) {
+    public void setParticipanteId(UUID participanteId) {
         this.participanteId = participanteId;
     }
 
