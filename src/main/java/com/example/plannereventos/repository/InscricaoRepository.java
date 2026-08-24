@@ -79,5 +79,14 @@ public class InscricaoRepository {
         return contador;
     }
 
+    public Inscricao buscarPorEventoEParticipante(int eventoId, UUID participanteId) {
+        if (participanteId == null) return null;
+        for (Inscricao inscricao : inscricoes) {
+            if (inscricao.getIdEvento() == eventoId && participanteId.equals(inscricao.getParticipanteId())) {
+                return inscricao;
+            }
+        }
+        return null;
+    }
 }
 

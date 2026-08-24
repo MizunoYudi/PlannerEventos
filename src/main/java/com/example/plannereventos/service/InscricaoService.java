@@ -97,4 +97,23 @@ public class InscricaoService {
 
         return inscricaoRepository.cadastrar(novaInscricao);
     }
+
+    public void cancelarInscricao(int eventoId, UUID participanteId) {
+        Evento evento = eventoRepository.buscarPorId(eventoId);
+        if (evento == null) {
+            throw new RuntimeException("Evento não encontrado.");
+        }
+        if (participanteRepository.buscarPorId(participanteId) == null) {
+            throw new RuntimeException("Participante não encontrado.");
+        }
+        Inscricao inscricao = inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId);
+        if (inscricao == null) {
+            throw new RuntimeException("Inscrição não encontrada para este participante no evento.");
+        }
+        if (!"CONFIRMADA".equalsIgnoreCase(inscricao.getStatus())) {
+            throw new RuntimeException("Apenas inscrições com status CONFIRMADA podem ser canceladas.");
+        }
+
+        inscricao.setStatus("CANCELADA");
+    }
 }
