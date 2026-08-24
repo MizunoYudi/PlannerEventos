@@ -21,7 +21,7 @@ public class ParticipanteService {
     }
 
     public ParticipanteResponse cadastrar(ParticipanteCreateRequest request){
-        if(participanteRepository.existsByEmail(request.getEmail().trim())) {
+        if(participanteRepository.existePorEmail(request.getEmail().trim())) {
             throw new EmailJaCadastradoException(request.getEmail());
         }
         Participante participante = new Participante();
@@ -30,38 +30,38 @@ public class ParticipanteService {
         participante.setEmail(request.getEmail().trim().toLowerCase());
         participante.setCriadoEm(LocalDateTime.now());
 
-        Participante salvo = participanteRepository.save(participante);
+        Participante salvo = participanteRepository.salvar(participante);
         return ParticipanteResponse.fromEntity(salvo);
     }
 
     public ParticipanteResponse atualizar(UUID id, ParticipanteCreateRequest request) {
-        Participante participante = participanteRepository.findById(id)
+        Participante participante = participanteRepository.buscarPorId(id)
                 .orElseThrow(() -> new ParticipanteNaoEncontradoException(id));
 
         String novoEmail = request.getEmail().trim().toLowerCase();
         String emailAtual = participante.getEmail().trim().toLowerCase();
 
         if (!emailAtual.equalsIgnoreCase(novoEmail)) {
-            if (participanteRepository.existsByEmail(novoEmail)) {
+            if (participanteRepository.existePorEmail(novoEmail)) {
                 throw new EmailJaCadastradoException(request.getEmail());
             }
         }
         participante.setNomeCompleto(request.getNomeCompleto().trim());
         participante.setEmail(novoEmail);
 
-        Participante salvo = participanteRepository.save(participante);
+        Participante salvo = participanteRepository.salvar(participante);
         return ParticipanteResponse.fromEntity(salvo);
     }
 
     public List<ParticipanteResponse> listarTodos() {
-        return participanteRepository.findAll()
+        return participanteRepository.listar()
                 .stream()
                 .map(ParticipanteResponse::fromEntity)
                 .toList();
     }
 
     public ParticipanteResponse buscarPorId(UUID id) {
-        Participante participante = participanteRepository.findById(id)
+        Participante participante = participanteRepository.buscarPorId(id)
                 .orElseThrow(() -> new ParticipanteNaoEncontradoException(id));
         return ParticipanteResponse.fromEntity(participante);
     }
