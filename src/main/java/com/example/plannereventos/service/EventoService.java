@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -43,17 +44,18 @@ public class EventoService {
         evento.setTitulo(request.getTitulo());
         evento.setDescricao(request.getDescricao());
         evento.setData(request.getData());
-        evento.setHorarioInicio(LocalDateTime.from(request.getHorarioInicio()));
-        evento.setHorarioTermino(LocalDateTime.from(request.getHorarioTermino()));
+        evento.setHorarioInicio(LocalTime.from(request.getHorarioInicio()));
+        evento.setHorarioTermino(LocalTime.from(request.getHorarioTermino()));
         evento.setLocal(request.getLocal());
         evento.setCapacidadeMaxima(request.getCapacidadeMaxima());
         evento.setStatus("ATIVO");
         evento.setRegistroCriacao(LocalDateTime.now());
 
-        Evento salvo = eventoRepository.salvar(evento);
+        eventoRepository.salvar(evento);
 
-        return new EventoResponse(salvo);
+        return EventoResponse.fromEntity(evento);
     }
+
    public EventoResponse atualizar(int id, EventoUpdateRequest request) {
        Evento existente = eventoRepository.buscarPorId(id);
        if (existente == null) {
@@ -79,7 +81,10 @@ public class EventoService {
         return new EventoResponse(cancelado);
     }
 
-    public List<Evento> listar(){
-        return eventoRepository.listar();
+    public List<EventoResponse> listar(){
+        return eventoRepository.listar()
+                .stream()
+                .map(EventoResponse::new)
+                .toList();
     }
 }
