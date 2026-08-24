@@ -1,20 +1,20 @@
 package com.example.plannereventos.dto;
 
 public class EventoVagasResponse {
-    private int eventoId;
+    private int id;
     private int capacidadeMaxima;
     private int inscricoesConfirmadas;
     private int vagasDisponiveis;
 
-    public EventoVagasResponse(int eventoId, int capacidadeMaxima, int inscricoesConfirmadas, int vagasDisponiveis) {
-        this.eventoId = eventoId;
+    public EventoVagasResponse(int id, int capacidadeMaxima, int inscricoesConfirmadas, int vagasDisponiveis) {
+        this.id = id;
         this.capacidadeMaxima = capacidadeMaxima;
         this.inscricoesConfirmadas = inscricoesConfirmadas;
         this.vagasDisponiveis = vagasDisponiveis;
     }
 
-    public int getEventoId() {
-        return eventoId;
+    public int getId() {
+        return id;
     }
 
     public int getCapacidadeMaxima() {

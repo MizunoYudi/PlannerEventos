@@ -1,7 +1,8 @@
 package com.example.plannereventos.dto;
 
 import com.example.plannereventos.model.Evento;
-import com.example.plannereventos.model.Participante;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,12 +13,15 @@ public class EventoResponse {
     private String titulo;
     private String descricao;
     private LocalDate data;
-    private LocalTime horarioInicio;
-    private LocalTime horarioTermino;
+    @JsonFormat(pattern = "HH:mm")
+    private LocalTime horaInicio;
+    @JsonFormat(pattern = "HH:mm")
+    private LocalTime horaFim;
     private String local;
     private int capacidadeMaxima;
     private String status;
-    private LocalDateTime registroCriacao;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime criadoEm;
 
     public EventoResponse() {
     }
@@ -27,34 +31,34 @@ public class EventoResponse {
         this.titulo = evento.getTitulo();
         this.descricao = evento.getDescricao();
         this.data = evento.getData();
-        this.horarioInicio = LocalTime.from(evento.getHorarioInicio());
-        this.horarioTermino = LocalTime.from(evento.getHorarioTermino());
+        this.horaInicio = LocalTime.from(evento.getHoraInicio());
+        this.horaFim = LocalTime.from(evento.getHoraFim());
         this.local = evento.getLocal();
         this.capacidadeMaxima = evento.getCapacidadeMaxima();
         this.status = evento.getStatus();
-        this.registroCriacao = evento.getRegistroCriacao();
+        this.criadoEm = evento.getCriadoEm();
     }
 
     public EventoResponse(int id,
                           String titulo,
                           String descricao,
                           LocalDate data,
-                          LocalTime horarioInicio,
-                          LocalTime horarioTermino,
+                          LocalTime horaInicio,
+                          LocalTime horaFim,
                           String local,
                           int capacidadeMaxima,
                           String status,
-                          LocalDateTime registroCriacao) {
+                          LocalDateTime criadoEm) {
         this.id = id;
         this.titulo = titulo;
         this.descricao = descricao;
         this.data = data;
-        this.horarioInicio = horarioInicio;
-        this.horarioTermino = horarioTermino;
+        this.horaInicio = horaInicio;
+        this.horaFim = horaFim;
         this.local = local;
         this.capacidadeMaxima = capacidadeMaxima;
         this.status = status;
-        this.registroCriacao = registroCriacao;
+        this.criadoEm = criadoEm;
     }
 
 
@@ -64,12 +68,12 @@ public class EventoResponse {
                 evento.getTitulo(),
                 evento.getDescricao(),
                 evento.getData(),
-                evento.getHorarioInicio(),
-                evento.getHorarioTermino(),
+                evento.getHoraInicio(),
+                evento.getHoraFim(),
                 evento.getLocal(),
                 evento.getCapacidadeMaxima(),
                 evento.getStatus(),
-                evento.getRegistroCriacao()
+                evento.getCriadoEm()
         );
     }
 
@@ -101,20 +105,20 @@ public class EventoResponse {
         this.data = data;
     }
 
-    public LocalTime getHorarioInicio() {
-        return horarioInicio;
+    public LocalTime getHoraInicio() {
+        return horaInicio;
     }
 
-    public void setHorarioInicio(LocalTime horarioInicio) {
-        this.horarioInicio = horarioInicio;
+    public void setHoraInicio(LocalTime horaInicio) {
+        this.horaInicio = horaInicio;
     }
 
-    public LocalTime getHorarioTermino() {
-        return horarioTermino;
+    public LocalTime getHoraFim() {
+        return horaFim;
     }
 
-    public void setHorarioTermino(LocalTime horarioTermino) {
-        this.horarioTermino = horarioTermino;
+    public void setHoraFim(LocalTime horaFim) {
+        this.horaFim = horaFim;
     }
 
     public String getLocal() {
@@ -141,11 +145,11 @@ public class EventoResponse {
         this.status = status;
     }
 
-    public LocalDateTime getRegistroCriacao() {
-        return registroCriacao;
+    public LocalDateTime getCriadoEm() {
+        return criadoEm;
     }
 
-    public void setRegistroCriacao(LocalDateTime registroCriacao) {
-        this.registroCriacao = registroCriacao;
+    public void setCriadoEm(LocalDateTime criadoEm) {
+        this.criadoEm = criadoEm;
     }
 }

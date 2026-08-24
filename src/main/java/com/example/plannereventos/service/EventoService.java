@@ -36,7 +36,7 @@ public class EventoService {
         if(evento.getData().isBefore(dataAtual)){
             throw new IllegalArgumentException("O evento não pode ser cadastrado com a data anterior a de hoje.");
         }
-        if (!evento.getHorarioTermino().isAfter(evento.getHorarioInicio())) {
+        if (!evento.getHoraFim().isAfter(evento.getHoraInicio())) {
             throw new IllegalArgumentException(" O horário de término deve ser posterior ao horário de início. ");
         }
         if(evento.getCapacidadeMaxima() <= 0 ){
@@ -49,12 +49,12 @@ public class EventoService {
         evento.setTitulo(request.getTitulo());
         evento.setDescricao(request.getDescricao());
         evento.setData(request.getData());
-        evento.setHorarioInicio(LocalTime.from(request.getHorarioInicio()));
-        evento.setHorarioTermino(LocalTime.from(request.getHorarioTermino()));
+        evento.setHoraInicio(request.getHoraInicio());
+        evento.setHoraFim(request.getHoraFim());
         evento.setLocal(request.getLocal());
         evento.setCapacidadeMaxima(request.getCapacidadeMaxima());
         evento.setStatus("ATIVO");
-        evento.setRegistroCriacao(LocalDateTime.now());
+        evento.setCriadoEm(LocalDateTime.now());
 
         eventoRepository.salvar(evento);
 
@@ -70,8 +70,8 @@ public class EventoService {
        existente.setTitulo(request.getTitulo());
        existente.setDescricao(request.getDescricao());
        existente.setData(request.getData());
-       existente.setHorarioInicio(request.getHorarioInicio());
-       existente.setHorarioTermino(request.getHorarioTermino());
+       existente.setHoraInicio(request.getHoraInicio());
+       existente.setHoraFim(request.getHoraFim());
        existente.setLocal(request.getLocal());
        existente.setCapacidadeMaxima(request.getCapacidadeMaxima());
 
