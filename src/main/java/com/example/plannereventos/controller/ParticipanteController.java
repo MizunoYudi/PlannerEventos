@@ -32,7 +32,7 @@ public class ParticipanteController {
     }
 
     @GetMapping("/{participanteId}/inscricoes")
-    public ResponseEntity<?> listarInscricoesDoParticipante(@PathVariable Long participanteId) {
+    public ResponseEntity<?> listarInscricoesDoParticipante(@PathVariable UUID participanteId) {
         try {
             List<Inscricao> lista = inscricaoService.listarPorParticipante(participanteId);
             return ResponseEntity.ok(lista); // 200 OK

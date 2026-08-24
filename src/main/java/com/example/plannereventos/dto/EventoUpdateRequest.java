@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public class EventoUpdateRequest {
 
@@ -22,15 +23,15 @@ public class EventoUpdateRequest {
     private LocalDate data;
 
     @NotNull(message = "O horário de início é obrigatório")
-    private LocalDateTime horarioInicio;
+    private LocalTime horarioInicio;
 
     @NotNull(message = "O horário de término é obrigatório")
-    private LocalDateTime horarioTermino;
+    private LocalTime horarioTermino;
 
     private String local;
 
     @Positive(message = "A capacidade deve ser maior que 0")
-    private int capacidade;
+    private int capacidadeMaxima;
 
     @AssertTrue(message = "O horário de término deve ser posterior ao horário de início")
     public boolean isHorarioValido() {
@@ -44,12 +45,11 @@ public class EventoUpdateRequest {
     public void setDescricao(String descricao) { this.descricao = descricao; }
     public LocalDate getData() { return data; }
     public void setData(LocalDate data) { this.data = data; }
-    public LocalDateTime getHorarioInicio() { return horarioInicio; }
-    public void setHorarioInicio(LocalDateTime horarioInicio) { this.horarioInicio = horarioInicio; }
-    public LocalDateTime getHorarioTermino() { return horarioTermino; }
-    public void setHorarioTermino(LocalDateTime horarioTermino) { this.horarioTermino = horarioTermino; }
+    public LocalTime getHorarioInicio() { return horarioInicio; }
+    public void setHorarioInicio(LocalTime horarioInicio) { this.horarioInicio = horarioInicio; }
+    public LocalTime getHorarioTermino() { return horarioTermino; }
+    public void setHorarioTermino(LocalTime horarioTermino) { this.horarioTermino = horarioTermino; }
     public String getLocal() { return local; }
     public void setLocal(String local) { this.local = local; }
-    public int getCapacidade() { return capacidade; }
-    public void setCapacidade(int capacidade) { this.capacidade = capacidade; }
+    public int getCapacidadeMaxima() { return capacidadeMaxima; }
 }

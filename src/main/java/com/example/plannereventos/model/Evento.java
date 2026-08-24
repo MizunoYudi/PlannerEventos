@@ -3,6 +3,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Date;
 
 public class Evento {
@@ -10,8 +11,8 @@ public class Evento {
     private String titulo;
     private String descricao;
     private LocalDate data;
-    private LocalDateTime horarioInicio;
-    private LocalDateTime horarioTermino;
+    private LocalTime horarioInicio;
+    private LocalTime horarioTermino;
     private String local;
     private int capacidadeMaxima;
     private String status;
@@ -25,8 +26,8 @@ public class Evento {
                   String titulo,
                   String descricao,
                   LocalDate data,
-                  LocalDateTime horarioInicio,
-                  LocalDateTime horarioTermino,
+                  LocalTime horarioInicio,
+                  LocalTime horarioTermino,
                   String local,
                   int capacidadeMaxima,
                   String status,
@@ -73,19 +74,19 @@ public class Evento {
         this.data = data;
     }
 
-    public LocalDateTime getHorarioInicio() {
+    public LocalTime getHorarioInicio() {
         return horarioInicio;
     }
 
-    public void setHorarioInicio(LocalDateTime horarioInicio) {
+    public void setHorarioInicio(LocalTime horarioInicio) {
         this.horarioInicio = horarioInicio;
     }
 
-    public LocalDateTime getHorarioTermino() {
+    public LocalTime getHorarioTermino() {
         return horarioTermino;
     }
 
-    public void setHorarioTermino(LocalDateTime horarioTermino) {
+    public void setHorarioTermino(LocalTime horarioTermino) {
         this.horarioTermino = horarioTermino;
     }
 

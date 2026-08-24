@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -43,19 +44,20 @@ public class EventoService {
         evento.setTitulo(request.getTitulo());
         evento.setDescricao(request.getDescricao());
         evento.setData(request.getData());
-        evento.setHorarioInicio(request.getHorarioInicio());
-        evento.setHorarioTermino(request.getHorarioTermino());
+        evento.setHorarioInicio(LocalTime.from(request.getHorarioInicio()));
+        evento.setHorarioTermino(LocalTime.from(request.getHorarioTermino()));
         evento.setLocal(request.getLocal());
-        evento.setCapacidade(request.getCapacidade());
+        evento.setCapacidadeMaxima(request.getCapacidadeMaxima());
         evento.setStatus("ATIVO");
         evento.setRegistroCriacao(LocalDateTime.now());
 
-        Evento salvo = eventoRepository.salvar(evento);
+        eventoRepository.salvar(evento);
 
-        return new EventoResponse(salvo);
+        return EventoResponse.fromEntity(evento);
     }
+
    public EventoResponse atualizar(int id, EventoUpdateRequest request) {
-       Evento existente = eventoRepository.buscar(id);
+       Evento existente = eventoRepository.buscarPorId(id);
        if (existente == null) {
            throw new IllegalArgumentException("evento não encontrado");
        }
@@ -66,20 +68,23 @@ public class EventoService {
        existente.setHorarioInicio(request.getHorarioInicio());
        existente.setHorarioTermino(request.getHorarioTermino());
        existente.setLocal(request.getLocal());
-       existente.setCapacidade(request.getCapacidade());
+       existente.setCapacidadeMaxima(request.getCapacidadeMaxima());
 
        Evento atualizado = eventoRepository.atualizar(existente);
        return new EventoResponse(atualizado);
    }
     public EventoResponse cancelar(int id) {
-        if (eventoRepository.buscar(id) == null) {
+        if (eventoRepository.buscarPorId(id) == null) {
             throw new IllegalArgumentException("evento não encontrado");
         }
         Evento cancelado = eventoRepository.cancelar(id);
         return new EventoResponse(cancelado);
     }
 
-    public List<Evento> listar(){
-        return eventoRepository.listar();
+    public List<EventoResponse> listar(){
+        return eventoRepository.listar()
+                .stream()
+                .map(EventoResponse::new)
+                .toList();
     }
 }

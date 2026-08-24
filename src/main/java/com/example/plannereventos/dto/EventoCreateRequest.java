@@ -6,9 +6,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class EventoCreateRequest {
+    private int id;
 
     @NotBlank(message = "O titulo e obrigatorio")
     private String titulo;
@@ -33,6 +35,24 @@ public class EventoCreateRequest {
     private int capacidadeMaxima;
 
     public EventoCreateRequest() {
+    }
+
+    public EventoCreateRequest(String titulo,
+                               String descricao,
+                               LocalDate data,
+                               LocalTime horarioInicio,
+                               LocalTime horarioTermino,
+                               String local,
+                               int capacidadeMaxima,
+                               String status,
+                               LocalDateTime registroCriacao) {
+        this.titulo = titulo;
+        this.descricao = descricao;
+        this.data = data;
+        this.horarioInicio = horarioInicio;
+        this.horarioTermino = horarioTermino;
+        this.local = local;
+        this.capacidadeMaxima = capacidadeMaxima;
     }
 
     public String getTitulo() {
