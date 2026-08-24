@@ -51,4 +51,15 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
+
+    @ExceptionHandler(EventoNaoEncontradoException.class)
+    public ResponseEntity<ErrorMessage> handleEventoNaoEncontrado(EventoNaoEncontradoException ex, HttpServletRequest request) {
+        ErrorMessage errorResponse = new ErrorMessage(
+                HttpStatus.NOT_FOUND.value(),
+                "Recurso Nao Encontrado",
+                List.of(ex.getMessage()),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
 }
