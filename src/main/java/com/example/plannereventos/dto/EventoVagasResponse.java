@@ -1,21 +1,19 @@
 package com.example.plannereventos.dto;
 
-import java.util.UUID;
-
 public class EventoVagasResponse {
-    private UUID eventoId;
+    private int eventoId;
     private int capacidadeMaxima;
-    private long inscricoesConfirmadas;
-    private long vagasDisponiveis;
+    private int inscricoesConfirmadas;
+    private int vagasDisponiveis;
 
-    public EventoVagasResponse(UUID eventoId, int capacidadeMaxima, long inscricoesConfirmadas, long vagasDisponiveis) {
+    public EventoVagasResponse(int eventoId, int capacidadeMaxima, int inscricoesConfirmadas, int vagasDisponiveis) {
         this.eventoId = eventoId;
         this.capacidadeMaxima = capacidadeMaxima;
         this.inscricoesConfirmadas = inscricoesConfirmadas;
         this.vagasDisponiveis = vagasDisponiveis;
     }
 
-    public UUID getEventoId() {
+    public int getEventoId() {
         return eventoId;
     }
 
@@ -23,11 +21,11 @@ public class EventoVagasResponse {
         return capacidadeMaxima;
     }
 
-    public long getInscricoesConfirmadas() {
+    public int getInscricoesConfirmadas() {
         return inscricoesConfirmadas;
     }
 
-    public long getVagasDisponiveis() {
+    public int getVagasDisponiveis() {
         return vagasDisponiveis;
     }
 }

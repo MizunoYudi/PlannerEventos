@@ -2,8 +2,11 @@ package com.example.plannereventos.service;
 import com.example.plannereventos.dto.EventoCreateRequest;
 import com.example.plannereventos.dto.EventoResponse;
 import com.example.plannereventos.dto.EventoUpdateRequest;
+import com.example.plannereventos.dto.EventoVagasResponse;
+import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.repository.EventoRepository;
+import com.example.plannereventos.repository.InscricaoRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -15,9 +18,11 @@ import java.util.List;
 public class EventoService {
 
     private EventoRepository eventoRepository;
+    private InscricaoRepository inscricaoRepository;
 
-    public EventoService(EventoRepository eventoRepository) {
+    public EventoService(EventoRepository eventoRepository, InscricaoRepository inscricaoRepository) {
         this.eventoRepository = eventoRepository;
+        this.inscricaoRepository = inscricaoRepository;
     }
 
     private void validarEvento(Evento evento){
@@ -86,5 +91,30 @@ public class EventoService {
                 .stream()
                 .map(EventoResponse::new)
                 .toList();
+    }
+
+    public EventoVagasResponse consultarVagas(int id) {
+        Evento evento = eventoRepository.buscarPorId(id);
+        if (evento == null) {
+            throw new EventoNaoEncontradoException(id);
+        }
+
+        int confirmadas = inscricaoRepository.contarConfirmadasPorEvento(id);
+        int vagasDisponiveis = Math.max(0, evento.getCapacidadeMaxima() - confirmadas);
+
+        return new EventoVagasResponse(
+                evento.getId(),
+                evento.getCapacidadeMaxima(),
+                confirmadas,
+                vagasDisponiveis
+        );
+    }
+
+    public EventoResponse buscarPorId(int id) {
+        Evento evento = eventoRepository.buscarPorId(id);
+        if (evento == null) {
+            throw new EventoNaoEncontradoException(id);
+        }
+        return EventoResponse.fromEntity(evento);
     }
 }

@@ -1,9 +1,7 @@
 package com.example.plannereventos.exception;
 
-import java.util.UUID;
-
 public class EventoNaoEncontradoException extends RuntimeException {
-    public EventoNaoEncontradoException(UUID id) {
+    public EventoNaoEncontradoException(int id) {
         super("Evento nao encontrado com o ID: " + id);
     }
 }
