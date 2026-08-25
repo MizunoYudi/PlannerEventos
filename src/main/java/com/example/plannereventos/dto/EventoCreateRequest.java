@@ -10,8 +10,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class EventoCreateRequest {
-    private int id;
-
     @NotBlank(message = "O titulo e obrigatorio")
     private String titulo;
 
@@ -23,10 +21,10 @@ public class EventoCreateRequest {
     private LocalDate data;
 
     @NotNull(message = "O horario de inicio e obrigatorio")
-    private LocalTime horarioInicio;
+    private LocalTime horaInicio;
 
     @NotNull(message = "O horario de termino e obrigatorio")
-    private LocalTime horarioTermino;
+    private LocalTime horaFim;
 
     @NotBlank(message = "O local e obrigatorio")
     private String local;
@@ -40,8 +38,8 @@ public class EventoCreateRequest {
     public EventoCreateRequest(String titulo,
                                String descricao,
                                LocalDate data,
-                               LocalTime horarioInicio,
-                               LocalTime horarioTermino,
+                               LocalTime horaInicio,
+                               LocalTime horaFim,
                                String local,
                                int capacidadeMaxima,
                                String status,
@@ -49,8 +47,8 @@ public class EventoCreateRequest {
         this.titulo = titulo;
         this.descricao = descricao;
         this.data = data;
-        this.horarioInicio = horarioInicio;
-        this.horarioTermino = horarioTermino;
+        this.horaInicio = horaInicio;
+        this.horaFim = horaFim;
         this.local = local;
         this.capacidadeMaxima = capacidadeMaxima;
     }
@@ -79,20 +77,20 @@ public class EventoCreateRequest {
         this.data = data;
     }
 
-    public LocalTime getHorarioInicio() {
-        return horarioInicio;
+    public LocalTime getHoraInicio() {
+        return horaInicio;
     }
 
-    public void setHorarioInicio(LocalTime horarioInicio) {
-        this.horarioInicio = horarioInicio;
+    public void setHoraInicio(LocalTime horaInicio) {
+        this.horaInicio = horaInicio;
     }
 
-    public LocalTime getHorarioTermino() {
-        return horarioTermino;
+    public LocalTime getHoraFim() {
+        return horaFim;
     }
 
-    public void setHorarioTermino(LocalTime horarioTermino) {
-        this.horarioTermino = horarioTermino;
+    public void setHoraFim(LocalTime horaFim) {
+        this.horaFim = horaFim;
     }
 
     public String getLocal() {

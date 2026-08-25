@@ -1,8 +1,6 @@
 package com.example.plannereventos.service;
 
-import com.example.plannereventos.dto.InscricaoResponse;
 import com.example.plannereventos.dto.InscricaoCreateRequest;
-import com.example.plannereventos.model.Participante;
 import com.example.plannereventos.repository.InscricaoRepository;
 import org.springframework.stereotype.Service;
 
@@ -72,7 +70,7 @@ public class InscricaoService {
             throw new RuntimeException("Não é permitido realizar inscrições em eventos cancelados.");
         }
 
-        LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), LocalTime.from(evento.getHorarioInicio()));
+        LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), evento.getHoraInicio());
         if (LocalDateTime.now().isAfter(inicioEvento)) {
             throw new RuntimeException("Não é permitido realizar inscrição após o início do evento.");
         }

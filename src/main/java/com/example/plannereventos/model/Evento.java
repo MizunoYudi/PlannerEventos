@@ -4,19 +4,18 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Date;
 
 public class Evento {
     private int id;
     private String titulo;
     private String descricao;
     private LocalDate data;
-    private LocalTime horarioInicio;
-    private LocalTime horarioTermino;
+    private LocalTime horaInicio;
+    private LocalTime horaFim;
     private String local;
     private int capacidadeMaxima;
     private String status;
-    private LocalDateTime registroCriacao;
+    private LocalDateTime criadoEm;
 
     @JsonCreator
     public Evento() {
@@ -26,22 +25,22 @@ public class Evento {
                   String titulo,
                   String descricao,
                   LocalDate data,
-                  LocalTime horarioInicio,
-                  LocalTime horarioTermino,
+                  LocalTime horaInicio,
+                  LocalTime horaFim,
                   String local,
                   int capacidadeMaxima,
                   String status,
-                  LocalDateTime registroCriacao) {
+                  LocalDateTime criadoEm) {
         this.id = id;
         this.titulo = titulo;
         this.descricao = descricao;
         this.data = data;
-        this.horarioInicio = horarioInicio;
-        this.horarioTermino = horarioTermino;
+        this.horaInicio = horaInicio;
+        this.horaFim = horaFim;
         this.local = local;
         this.capacidadeMaxima = capacidadeMaxima;
         this.status = status;
-        this.registroCriacao = registroCriacao;
+        this.criadoEm = criadoEm;
     }
 
     public int getId() { return id; }
@@ -74,21 +73,13 @@ public class Evento {
         this.data = data;
     }
 
-    public LocalTime getHorarioInicio() {
-        return horarioInicio;
-    }
+    public LocalTime getHoraInicio() { return horaInicio; }
 
-    public void setHorarioInicio(LocalTime horarioInicio) {
-        this.horarioInicio = horarioInicio;
-    }
+    public void setHoraInicio(LocalTime horaInicio) { this.horaInicio = horaInicio; }
 
-    public LocalTime getHorarioTermino() {
-        return horarioTermino;
-    }
+    public LocalTime getHoraFim() { return horaFim; }
 
-    public void setHorarioTermino(LocalTime horarioTermino) {
-        this.horarioTermino = horarioTermino;
-    }
+    public void setHoraFim(LocalTime horaFim) { this.horaFim = horaFim; }
 
     public String getLocal() {
         return local;
@@ -114,11 +105,11 @@ public class Evento {
         this.status = status;
     }
 
-    public LocalDateTime getRegistroCriacao() {
-        return registroCriacao;
+    public LocalDateTime getCriadoEm() {
+        return criadoEm;
     }
 
-    public void setRegistroCriacao(LocalDateTime registroCriacao) {
-        this.registroCriacao = registroCriacao;
+    public void setCriadoEm(LocalDateTime criadoEm) {
+        this.criadoEm = criadoEm;
     }
 }

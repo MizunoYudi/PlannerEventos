@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class EventoUpdateRequest {
@@ -23,10 +22,10 @@ public class EventoUpdateRequest {
     private LocalDate data;
 
     @NotNull(message = "O horário de início é obrigatório")
-    private LocalTime horarioInicio;
+    private LocalTime horaInicio;
 
     @NotNull(message = "O horário de término é obrigatório")
-    private LocalTime horarioTermino;
+    private LocalTime horaFim;
 
     private String local;
 
@@ -35,8 +34,8 @@ public class EventoUpdateRequest {
 
     @AssertTrue(message = "O horário de término deve ser posterior ao horário de início")
     public boolean isHorarioValido() {
-        if (horarioInicio == null || horarioTermino == null) return true;
-        return horarioTermino.isAfter(horarioInicio);
+        if (horaInicio == null || horaFim == null) return true;
+        return horaFim.isAfter(horaInicio);
     }
 
     public String getTitulo() { return titulo; }
@@ -45,10 +44,10 @@ public class EventoUpdateRequest {
     public void setDescricao(String descricao) { this.descricao = descricao; }
     public LocalDate getData() { return data; }
     public void setData(LocalDate data) { this.data = data; }
-    public LocalTime getHorarioInicio() { return horarioInicio; }
-    public void setHorarioInicio(LocalTime horarioInicio) { this.horarioInicio = horarioInicio; }
-    public LocalTime getHorarioTermino() { return horarioTermino; }
-    public void setHorarioTermino(LocalTime horarioTermino) { this.horarioTermino = horarioTermino; }
+    public LocalTime getHoraInicio() { return horaInicio; }
+    public void setHoraInicio(LocalTime horaInicio) { this.horaInicio = horaInicio; }
+    public LocalTime getHoraFim() { return horaFim; }
+    public void setHoraFim(LocalTime horaFim) { this.horaFim = horaFim; }
     public String getLocal() { return local; }
     public void setLocal(String local) { this.local = local; }
     public int getCapacidadeMaxima() { return capacidadeMaxima; }
