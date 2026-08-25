@@ -16,12 +16,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EmailJaCadastradoException.class)
     public ResponseEntity<ErrorMessage> handleEmailJaCadastrado(EmailJaCadastradoException ex, HttpServletRequest request) {
         ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.CONFLICT.value(),
                 "Regra de Negocio Violada",
                 List.of(ex.getMessage()),
                 request.getRequestURI()
         );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
