@@ -1,6 +1,7 @@
 package com.example.plannereventos.controller;
 
 import com.example.plannereventos.dto.InscricaoCreateRequest;
+import com.example.plannereventos.dto.InscricaoResponse;
 import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.service.InscricaoService;
 import jakarta.validation.Valid;
@@ -33,6 +34,13 @@ public class InscricaoController {
     @GetMapping
     public ResponseEntity<List<Inscricao>> listarPorEvento(@PathVariable int eventoId) {
         return ResponseEntity.ok(inscricaoService.listarPorEvento(eventoId));
+    }
+
+    @GetMapping("/{participanteId}")
+    public ResponseEntity<InscricaoResponse> buscarInscricao(
+            @PathVariable int eventoId,
+            @PathVariable UUID participanteId) {
+        return ResponseEntity.ok(inscricaoService.buscarPorEventoEParticipante(eventoId, participanteId));
     }
 
     @DeleteMapping("/{participanteId}")

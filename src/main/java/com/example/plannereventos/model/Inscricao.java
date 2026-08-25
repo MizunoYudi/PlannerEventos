@@ -6,22 +6,22 @@ public class Inscricao {
     private int id;
     private int idEvento;
     private UUID participanteId;
-    private LocalDateTime dataInscricao;
+    private LocalDateTime criadoEm;
     private String status = "CONFIRMADA";
 
     public Inscricao(){
     }
 
-    public Inscricao(int id, int idEvento, UUID participanteId, LocalDateTime dataInscricao, String status){
+    public Inscricao(int id, int idEvento, UUID participanteId, LocalDateTime criadoEm, String status){
         this.id = id;
-        this.dataInscricao = dataInscricao;
+        this.criadoEm = criadoEm;
         this.idEvento = idEvento;
         this.participanteId = participanteId;
         this.status = status;
     }
 
-    public LocalDateTime getDataInscricao() {
-        return dataInscricao;
+    public LocalDateTime getCriadoEm() {
+        return criadoEm;
     }
 
     public int getId() {
@@ -40,8 +40,8 @@ public class Inscricao {
         return status;
     }
 
-    public void setDataInscricao(LocalDateTime dataInscricao) {
-        this.dataInscricao = dataInscricao;
+    public void setCriadoEm(LocalDateTime criadoEm) {
+        this.criadoEm = criadoEm;
     }
 
     public void setId(int id) { this.id = id; }
