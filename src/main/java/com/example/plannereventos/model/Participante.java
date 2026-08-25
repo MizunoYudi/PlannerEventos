@@ -7,23 +7,23 @@ import java.util.UUID;
 public class Participante {
 
     private UUID id;
-    private String nomeCompleto;
+    private String nome;
     private String email;
     private LocalDateTime criadoEm;
 
     public Participante() {
     }
 
-    public Participante(String nomeCompleto, String email) {
+    public Participante(String nome, String email) {
         this.id = UUID.randomUUID();
-        this.nomeCompleto = nomeCompleto;
+        this.nome = nome;
         this.email = email;
         this.criadoEm = LocalDateTime.now();
     }
 
-    public Participante(UUID id, String nomeCompleto, String email, LocalDateTime criadoEm) {
+    public Participante(UUID id, String nome, String email, LocalDateTime criadoEm) {
         this.id = id;
-        this.nomeCompleto = nomeCompleto;
+        this.nome = nome;
         this.email = email;
         this.criadoEm = criadoEm;
     }
@@ -36,12 +36,12 @@ public class Participante {
         this.id = id;
     }
 
-    public String getNomeCompleto() {
-        return nomeCompleto;
+    public String getNome() {
+        return nome;
     }
 
-    public void setNomeCompleto(String nomeCompleto) {
-        this.nomeCompleto = nomeCompleto;
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 
     public String getEmail() {
@@ -77,7 +77,7 @@ public class Participante {
     public String toString() {
         return "Participante{" +
                 "id=" + id +
-                ", nomeCompleto='" + nomeCompleto + '\'' +
+                ", nome='" + nome + '\'' +
                 ", email='" + email + '\'' +
                 ", criadoEm=" + criadoEm +
                 '}';

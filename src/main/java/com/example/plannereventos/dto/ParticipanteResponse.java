@@ -1,6 +1,7 @@
 package com.example.plannereventos.dto;
 
 import com.example.plannereventos.model.Participante;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -8,12 +9,12 @@ import java.util.UUID;
 public class ParticipanteResponse {
     private UUID id;
 
-    public String getNomeCompleto() {
-        return nomeCompleto;
+    public String getNome() {
+        return nome;
     }
 
-    public void setNomeCompleto(String nomeCompleto) {
-        this.nomeCompleto = nomeCompleto;
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 
     public String getEmail() {
@@ -32,16 +33,17 @@ public class ParticipanteResponse {
         this.criadoEm = criadoEm;
     }
 
-    private String nomeCompleto;
+    private String nome;
     private String email;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime criadoEm;
 
     public ParticipanteResponse() {
     }
 
-    public ParticipanteResponse(UUID id, String nomeCompleto, String email, LocalDateTime criadoEm) {
+    public ParticipanteResponse(UUID id, String nome, String email, LocalDateTime criadoEm) {
         this.id = id;
-        this.nomeCompleto = nomeCompleto;
+        this.nome = nome;
         this.email = email;
         this.criadoEm = criadoEm;
     }
@@ -49,7 +51,7 @@ public class ParticipanteResponse {
     public static ParticipanteResponse fromEntity(Participante participante) {
         return new ParticipanteResponse(
                 participante.getId(),
-                participante.getNomeCompleto(),
+                participante.getNome(),
                 participante.getEmail(),
                 participante.getCriadoEm()
         );

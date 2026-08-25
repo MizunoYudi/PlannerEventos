@@ -26,7 +26,7 @@ public class ParticipanteService {
         }
         Participante participante = new Participante();
         participante.setId(UUID.randomUUID());
-        participante.setNomeCompleto(request.getNomeCompleto().trim());
+        participante.setNome(request.getNome().trim());
         participante.setEmail(request.getEmail().trim().toLowerCase());
         participante.setCriadoEm(LocalDateTime.now());
 
@@ -46,7 +46,7 @@ public class ParticipanteService {
                 throw new EmailJaCadastradoException(request.getEmail());
             }
         }
-        participante.setNomeCompleto(request.getNomeCompleto().trim());
+        participante.setNome(request.getNome().trim());
         participante.setEmail(novoEmail);
 
         Participante salvo = participanteRepository.salvar(participante);

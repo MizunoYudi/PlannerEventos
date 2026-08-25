@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 
 public class ParticipanteCreateRequest {
 
-    @NotBlank(message = "O nome completo e obrigatorio")
-    private String nomeCompleto;
+    @NotBlank(message = "O nome e obrigatorio")
+    private String nome;
 
     @NotBlank(message = "O e-mail e obrigatorio")
     @Email(message = "O e-mail deve possuir um formato valido")
@@ -15,17 +15,17 @@ public class ParticipanteCreateRequest {
     public ParticipanteCreateRequest() {
     }
 
-    public ParticipanteCreateRequest(String nomeCompleto, String email) {
-        this.nomeCompleto = nomeCompleto;
+    public ParticipanteCreateRequest(String nome, String email) {
+        this.nome = nome;
         this.email = email;
     }
 
-    public String getNomeCompleto() {
-        return nomeCompleto;
+    public String getNome() {
+        return nome;
     }
 
-    public void setNomeCompleto(String nomeCompleto) {
-        this.nomeCompleto = nomeCompleto;
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 
     public String getEmail() {
