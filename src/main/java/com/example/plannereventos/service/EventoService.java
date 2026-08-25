@@ -9,9 +9,7 @@ import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -25,24 +23,6 @@ public class EventoService {
         this.inscricaoRepository = inscricaoRepository;
     }
 
-    private void validarEvento(Evento evento){
-        if (evento.getTitulo().isBlank()) {
-            throw new IllegalArgumentException("O titulo não pode ficar em branco");
-        }
-        if(evento.getDescricao().isBlank()){
-            throw new IllegalArgumentException("A descrição não pode ficar em branco");
-        }
-        LocalDate dataAtual = LocalDate.now();
-        if(evento.getData().isBefore(dataAtual)){
-            throw new IllegalArgumentException("O evento não pode ser cadastrado com a data anterior a de hoje.");
-        }
-        if (!evento.getHoraFim().isAfter(evento.getHoraInicio())) {
-            throw new IllegalArgumentException(" O horário de término deve ser posterior ao horário de início. ");
-        }
-        if(evento.getCapacidadeMaxima() <= 0 ){
-            throw new IllegalArgumentException("A capacidade do evento deve ser maior que 0");
-        }
-    }
 
     public EventoResponse cadastrar(EventoCreateRequest request) {
         Evento evento = new Evento();
@@ -64,7 +44,7 @@ public class EventoService {
    public EventoResponse atualizar(int id, EventoUpdateRequest request) {
        Evento existente = eventoRepository.buscarPorId(id);
        if (existente == null) {
-           throw new IllegalArgumentException("evento não encontrado");
+           throw new EventoNaoEncontradoException(id);
        }
 
        existente.setTitulo(request.getTitulo());
@@ -80,7 +60,7 @@ public class EventoService {
    }
     public EventoResponse cancelar(int id) {
         if (eventoRepository.buscarPorId(id) == null) {
-            throw new IllegalArgumentException("evento não encontrado");
+            throw new EventoNaoEncontradoException(id);
         }
         Evento cancelado = eventoRepository.cancelar(id);
         return new EventoResponse(cancelado);
