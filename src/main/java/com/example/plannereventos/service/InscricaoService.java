@@ -1,6 +1,9 @@
 package com.example.plannereventos.service;
 
 import com.example.plannereventos.dto.InscricaoCreateRequest;
+import com.example.plannereventos.dto.InscricaoResponse;
+import com.example.plannereventos.exception.EventoNaoEncontradoException;
+import com.example.plannereventos.exception.ParticipanteNaoEncontradoException;
 import com.example.plannereventos.repository.InscricaoRepository;
 import org.springframework.stereotype.Service;
 
@@ -40,16 +43,16 @@ public class InscricaoService {
         return inscricaoRepository.listarPorParticipante(participanteId);
     }
 
-    public Inscricao buscarPorEventoEParticipante(int eventoId, UUID participanteId) {
+    public InscricaoResponse buscarPorEventoEParticipante(int eventoId, UUID participanteId) {
         if (eventoRepository.buscarPorId(eventoId) == null) {
-            throw new RuntimeException("Evento não encontrado.");
+            throw new EventoNaoEncontradoException(eventoId);
         }
         if (participanteRepository.buscarPorId(participanteId) == null) {
-            throw new RuntimeException("Participante não encontrado.");
+            throw new ParticipanteNaoEncontradoException(participanteId);
         }
         for (Inscricao inscricao : inscricaoRepository.listar()) {
-            if (inscricao.getIdEvento() == eventoId && inscricao.getParticipanteId() == participanteId) {
-                return inscricao;
+            if (inscricao.getIdEvento() == eventoId && inscricao.getParticipanteId().equals(participanteId)) {
+                return new InscricaoResponse(inscricao);
             }
         }
         throw new RuntimeException("Inscrição não encontrada para este participante no evento.");
@@ -90,7 +93,7 @@ public class InscricaoService {
         Inscricao novaInscricao = new Inscricao();
         novaInscricao.setIdEvento(eventoId);
         novaInscricao.setParticipanteId(participanteId);
-        novaInscricao.setDataInscricao(LocalDateTime.now());
+        novaInscricao.setCriadoEm(LocalDateTime.now());
         novaInscricao.setStatus("CONFIRMADA");
 
         return inscricaoRepository.cadastrar(novaInscricao);
