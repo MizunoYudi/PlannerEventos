@@ -1,6 +1,6 @@
 package com.example.plannereventos.model;
-import com.fasterxml.jackson.annotation.JsonCreator;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -65,9 +65,7 @@ public class Evento {
         this.descricao = descricao;
     }
 
-    public LocalDate getData() {
-        return data;
-    }
+    public LocalDate getData() { return data; }
 
     public void setData(LocalDate data) {
         this.data = data;

@@ -15,34 +15,33 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/eventos")
 public class EventoController {
-
     private final EventoService eventoService;
-    private final InscricaoService inscricaoService;
 
-    public EventoController(EventoService eventoService, InscricaoService inscricaoService) {
+    public EventoController(EventoService eventoService) {
         this.eventoService = eventoService;
-        this.inscricaoService = inscricaoService;
     }
 
     @PostMapping
-    public ResponseEntity<EventoResponse> cadastrar(@Valid @RequestBody EventoCreateRequest request) {
-        EventoResponse response = eventoService.cadastrar(request);
+    public ResponseEntity<EventoResponse> salvarEvento(@Valid @RequestBody EventoCreateRequest request) {
+        EventoResponse response = eventoService.salvarEvento(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
     @PutMapping("/{id}")
-    public ResponseEntity<EventoResponse> atualizar(@PathVariable int id, @Valid @RequestBody EventoUpdateRequest request) {
-        EventoResponse response = eventoService.atualizar(id, request);
+    public ResponseEntity<EventoResponse> atualizarEvento(@PathVariable int id, @Valid @RequestBody EventoUpdateRequest request) {
+        EventoResponse response = eventoService.atualizarEvento(id, request);
         return ResponseEntity.ok(response);
     }
+
     @PatchMapping("/{id}/cancelamento")
-    public ResponseEntity<EventoResponse> cancelar(@PathVariable int id) {
-        EventoResponse response = eventoService.cancelar(id);
+    public ResponseEntity<EventoResponse> cancelarEvento(@PathVariable int id) {
+        EventoResponse response = eventoService.cancelarEvento(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
-    public ResponseEntity<List<EventoResponse>> listar() {
-        return ResponseEntity.ok(eventoService.listar());
+    public ResponseEntity<List<EventoResponse>> listarEventos() {
+        return ResponseEntity.ok(eventoService.listarEventos());
     }
 
     @GetMapping("/{id}")
@@ -50,7 +49,6 @@ public class EventoController {
         return ResponseEntity.ok(eventoService.buscarPorId(id));
     }
 
-    // RF06: GET /api/eventos/{id}/vagas
     @GetMapping("/{id}/vagas")
     public ResponseEntity<EventoVagasResponse> consultarVagas(@PathVariable int id) {
         return ResponseEntity.ok(eventoService.consultarVagas(id));

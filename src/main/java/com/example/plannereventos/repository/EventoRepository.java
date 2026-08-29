@@ -2,58 +2,49 @@ package com.example.plannereventos.repository;
 
 import com.example.plannereventos.model.Evento;
 import org.springframework.stereotype.Repository;
-
 import java.util.ArrayList;
 import java.util.List;
 
 @Repository
 public class EventoRepository {
+    private final List<Evento> eventos = new ArrayList<>();
 
-    private List<Evento> eventos = new ArrayList<>();
-
-    //criar um evento
-    public Evento salvar(Evento evento){
+    public Evento salvarEvento(Evento evento) {
         evento.setId(eventos.size() + 1);
         eventos.add(evento);
         return evento;
     }
 
-    //listar todos os eventos
-    public List<Evento> listar(){
+    public List<Evento> listarEventos() {
         return eventos;
     }
 
-    //buscando um evento pelo id correspondente
-    public Evento buscarPorId(int id) {
-        for(Evento evento : eventos){
-            if(evento.getId() ==  id){
+    public Evento atualizarEvento(Evento evento) {
+        for(int i = 0; i < eventos.size(); i++){
+            if(eventos.get(i).getId() == evento.getId()){
+                eventos.set(i, evento);
                 return evento;
             }
         }
         return null;
     }
 
-    //atualizando um evento através do id da lista e comparando se é igual ao id do evento passado por parametro
-    public Evento atualizar(Evento evento){
-        for (int i = 0; i < eventos.size(); i++){
-           if(eventos.get(i).getId() == evento.getId()){
-               eventos.set(i, evento);
-               return evento;
-           }
+    public Evento buscarPorId(int id) {
+        for (Evento evento : eventos) {
+            if (evento.getId() == id) {
+                return evento;
+            }
         }
         return null;
     }
 
-    //cancelando um evento.... buscando pelo id e atualizando o 'status' do evento
-    public Evento cancelar(int id) {
+    public Evento cancelarEvento(int id) {
         Evento evento = buscarPorId(id);
-        if(evento != null){
+        if (evento != null) {
             evento.setStatus("CANCELADO");
-            atualizar(evento);
-
+            atualizarEvento(evento);
             return evento;
-        }
-        else{
+        } else {
             return null;
         }
     }
