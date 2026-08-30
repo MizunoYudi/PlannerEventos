@@ -1,9 +1,7 @@
 package com.example.plannereventos.dto;
 
 import com.example.plannereventos.model.Evento;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;

@@ -1,36 +1,38 @@
 package com.example.plannereventos.dto;
 
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
+import jakarta.validation.constraints.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class EventoCreateRequest {
-    @NotBlank(message = "O titulo e obrigatorio")
+    @NotBlank(message = "Titulo não informado")
     private String titulo;
 
-    @NotBlank(message = "A descricao e obrigatoria")
+    @NotBlank(message = "Descricao não informada")
     private String descricao;
 
-    @NotNull(message = "A data e obrigatoria")
-    @Future(message = "A data deve ser futura")
+    @NotNull(message = "Data não informada")
+    @Future(message = "Data Inválida, deve ser posterior ao dia atual")
     private LocalDate data;
 
-    @NotNull(message = "O horario de inicio e obrigatorio")
+    @NotNull(message = "Hora de inicio não informado")
     private LocalTime horaInicio;
 
-    @NotNull(message = "O horario de termino e obrigatorio")
+    @NotNull(message = "Hora de fim não informado")
     private LocalTime horaFim;
 
-    @NotBlank(message = "O local e obrigatorio")
+    @NotBlank(message = "Local não informado")
     private String local;
 
-    @Min(value = 1, message = "A capacidade maxima deve ser maior que 0")
+    @Min(value = 1, message = "Capacidade Inválida, deve ser maior que 0")
     private int capacidadeMaxima;
+
+    @AssertTrue(message = "A hora de fim deve ser posterior a hora de início do evento")
+    public boolean isHorarioValido() {
+        if (horaInicio == null || horaFim == null) return true;
+        return horaFim.isAfter(horaInicio);
+    }
 
     public EventoCreateRequest() {
     }
@@ -41,9 +43,7 @@ public class EventoCreateRequest {
                                LocalTime horaInicio,
                                LocalTime horaFim,
                                String local,
-                               int capacidadeMaxima,
-                               String status,
-                               LocalDateTime registroCriacao) {
+                               int capacidadeMaxima) {
         this.titulo = titulo;
         this.descricao = descricao;
         this.data = data;
