@@ -26,8 +26,8 @@ public class ParticipanteController {
     }
 
     @PostMapping
-    public ResponseEntity<ParticipanteResponse> cadastrar(@Valid @RequestBody ParticipanteCreateRequest request) {
-        ParticipanteResponse response = participanteService.cadastrar(request);
+    public ResponseEntity<ParticipanteResponse> cadastrarParticipante(@Valid @RequestBody ParticipanteCreateRequest request) {
+        ParticipanteResponse response = participanteService.cadastrarParticipante(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -42,16 +42,16 @@ public class ParticipanteController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ParticipanteResponse> atualizar(
+    public ResponseEntity<ParticipanteResponse> atualizarParticipante(
             @PathVariable UUID id,
             @Valid @RequestBody ParticipanteCreateRequest request) {
-        ParticipanteResponse response = participanteService.atualizar(id, request);
+        ParticipanteResponse response = participanteService.atualizarParticipante(id, request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
-    public ResponseEntity<List<ParticipanteResponse>> listarTodos() {
-        List<ParticipanteResponse> participantes = participanteService.listarTodos();
+    public ResponseEntity<List<ParticipanteResponse>> listarParticipantes() {
+        List<ParticipanteResponse> participantes = participanteService.listarParticipantes();
         return ResponseEntity.ok(participantes);
     }
 

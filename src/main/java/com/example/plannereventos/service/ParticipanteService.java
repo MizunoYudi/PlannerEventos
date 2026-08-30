@@ -20,7 +20,7 @@ public class ParticipanteService {
         this.participanteRepository = participanteRepository;
     }
 
-    public ParticipanteResponse cadastrar(ParticipanteCreateRequest request){
+    public ParticipanteResponse cadastrarParticipante(ParticipanteCreateRequest request){
         if(participanteRepository.existePorEmail(request.getEmail().trim())) {
             throw new EmailJaCadastradoException(request.getEmail());
         }
@@ -30,11 +30,11 @@ public class ParticipanteService {
         participante.setEmail(request.getEmail().trim().toLowerCase());
         participante.setCriadoEm(LocalDateTime.now());
 
-        Participante salvo = participanteRepository.salvar(participante);
+        Participante salvo = participanteRepository.salvarParticipante(participante);
         return ParticipanteResponse.fromEntity(salvo);
     }
 
-    public ParticipanteResponse atualizar(UUID id, ParticipanteCreateRequest request) {
+    public ParticipanteResponse atualizarParticipante(UUID id, ParticipanteCreateRequest request) {
         Participante participante = participanteRepository.buscarPorId(id)
                 .orElseThrow(() -> new ParticipanteNaoEncontradoException(id));
 
@@ -49,12 +49,12 @@ public class ParticipanteService {
         participante.setNome(request.getNome().trim());
         participante.setEmail(novoEmail);
 
-        Participante salvo = participanteRepository.salvar(participante);
+        Participante salvo = participanteRepository.salvarParticipante(participante);
         return ParticipanteResponse.fromEntity(salvo);
     }
 
-    public List<ParticipanteResponse> listarTodos() {
-        return participanteRepository.listar()
+    public List<ParticipanteResponse> listarParticipantes() {
+        return participanteRepository.listarParticipantes()
                 .stream()
                 .map(ParticipanteResponse::fromEntity)
                 .toList();
