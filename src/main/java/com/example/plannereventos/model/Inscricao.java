@@ -6,22 +6,23 @@ public class Inscricao {
     private int id;
     private int idEvento;
     private UUID participanteId;
-    private LocalDateTime criadoEm;
+    private LocalDateTime dataCriacao;
     private String status = "CONFIRMADA";
 
+    @JsonCreator
     public Inscricao(){
     }
 
-    public Inscricao(int id, int idEvento, UUID participanteId, LocalDateTime criadoEm, String status){
+    public Inscricao(int id, int idEvento, UUID participanteId, LocalDateTime dataCriacao, String status){
         this.id = id;
-        this.criadoEm = criadoEm;
+        this.dataCriacao = dataCriacao;
         this.idEvento = idEvento;
         this.participanteId = participanteId;
         this.status = status;
     }
 
-    public LocalDateTime getCriadoEm() {
-        return criadoEm;
+    public LocalDateTime getDataCriacao() {
+        return dataCriacao;
     }
 
     public int getId() {
@@ -40,8 +41,8 @@ public class Inscricao {
         return status;
     }
 
-    public void setCriadoEm(LocalDateTime criadoEm) {
-        this.criadoEm = criadoEm;
+    public void setdataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
     }
 
     public void setId(int id) { this.id = id; }
