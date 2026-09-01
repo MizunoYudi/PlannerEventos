@@ -1,8 +1,12 @@
 package com.example.plannereventos.dto;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.util.UUID;
 
 public class InscricaoCreateRequest {
+
+    @NotNull(message = "O identificador do participante é obrigatorio")
     private UUID participanteId;
 
     public InscricaoCreateRequest() {

@@ -13,21 +13,17 @@ public class InscricaoRepository {
     private List<Inscricao> inscricoes = new ArrayList<>();
     private int proximoId = 1;
 
-    //Cadastrar
     public Inscricao cadastrar(Inscricao inscricao) {
         inscricao.setId(proximoId);
         proximoId++;
-
         inscricoes.add(inscricao);
         return inscricao;
     }
 
-    //Listar
-    public List<Inscricao> listar() {
+    public List<Inscricao> listarInscricoes() {
         return inscricoes;
     }
 
-    //Buscar
     public Inscricao buscarPorId(int id) {
         for (Inscricao p : inscricoes) {
             if (p.getId() == id) {
@@ -36,7 +32,7 @@ public class InscricaoRepository {
         }
         return null;
     }
-    //cancelar
+
     public boolean cancelar(int id) {
         Inscricao inscricao = buscarPorId(id);
         if (inscricao != null) {
@@ -46,7 +42,6 @@ public class InscricaoRepository {
         return false;
     }
 
-    //Listar inscricoes do evento
     public List<Inscricao> listarPorEvento(int idEvento) {
         List<Inscricao> filtradas = new ArrayList<>();
         for (Inscricao p : inscricoes) {
@@ -57,7 +52,6 @@ public class InscricaoRepository {
         return filtradas;
     }
 
-    //Listar inscricoes do participante
     public List<Inscricao> listarPorParticipante(UUID participanteId) {
         List<Inscricao> filtradas = new ArrayList<>();
         for (Inscricao p : inscricoes) {
@@ -68,7 +62,6 @@ public class InscricaoRepository {
         return filtradas;
     }
 
-    //Contar vagas ocupadas
     public int contarConfirmadasPorEvento(int idEvento) {
         int contador = 0;
         for (Inscricao p : inscricoes) {

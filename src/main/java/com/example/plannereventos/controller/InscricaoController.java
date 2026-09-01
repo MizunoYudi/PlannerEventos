@@ -23,21 +23,20 @@ public class InscricaoController {
     }
 
     @PostMapping
-    public ResponseEntity<Inscricao> inscrever(
+    public ResponseEntity<InscricaoResponse> salvarInscricao(
             @PathVariable int eventoId,
             @Valid @RequestBody InscricaoCreateRequest request) {
-        Inscricao inscricao = inscricaoService.inscrever(eventoId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(inscricao);
+        InscricaoResponse response = inscricaoService.inscrever(eventoId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // Listar inscrições do evento
     @GetMapping
-    public ResponseEntity<List<Inscricao>> listarPorEvento(@PathVariable int eventoId) {
+    public ResponseEntity<List<InscricaoResponse>> listarPorEvento(@PathVariable int eventoId) {
         return ResponseEntity.ok(inscricaoService.listarPorEvento(eventoId));
     }
 
     @GetMapping("/{participanteId}")
-    public ResponseEntity<InscricaoResponse> buscarInscricao(
+    public ResponseEntity<InscricaoResponse> buscarPorId(
             @PathVariable int eventoId,
             @PathVariable UUID participanteId) {
         return ResponseEntity.ok(inscricaoService.buscarPorEventoEParticipante(eventoId, participanteId));

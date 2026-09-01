@@ -8,17 +8,17 @@ public class InscricaoResponse {
     private int id;
     private int eventoId;
     private UUID participanteId;
-    private LocalDateTime criadoEm;
+    private LocalDateTime dataCriacao;
     private String status;
 
     public InscricaoResponse() {
     }
 
-    public InscricaoResponse(int id, int eventoId, UUID participanteId, LocalDateTime criadoEm, String status) {
+    public InscricaoResponse(int id, int eventoId, UUID participanteId, LocalDateTime dataCriacao, String status) {
         this.id = id;
         this.eventoId = eventoId;
         this.participanteId = participanteId;
-        this.criadoEm = criadoEm;
+        this.dataCriacao = dataCriacao;
         this.status = status;
     }
 
@@ -26,7 +26,7 @@ public class InscricaoResponse {
         this.id = inscricao.getId();
         this.eventoId = inscricao.getIdEvento();
         this.participanteId = inscricao.getParticipanteId();
-        this.criadoEm = inscricao.getCriadoEm();
+        this.DataCriacao = inscricao.getDataCriacaom();
         this.status = inscricao.getStatus();
     }
 
@@ -54,12 +54,12 @@ public class InscricaoResponse {
         this.participanteId = participanteId;
     }
 
-    public LocalDateTime getcriadoEm() {
-        return criadoEm;
+    public LocalDateTime getDataCriacao() {
+        return DataCriacao;
     }
 
-    public void setcriadoEm(LocalDateTime criadoEm) {
-        this.criadoEm = criadoEm;
+    public void setDataCriacao(LocalDateTime DataCriacao) {
+        this.DataCriacao = criadoEm;
     }
 
     public String getStatus() {
