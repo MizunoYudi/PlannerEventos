@@ -12,7 +12,7 @@ public class ParticipanteRepository {
 
     private final Map<UUID, Participante> storage = new ConcurrentHashMap<>();
 
-    public Participante salvar(Participante participante) {
+    public Participante salvarParticipante(Participante participante) {
         if (participante.getId() == null) {
             participante.setId(UUID.randomUUID());
         }
@@ -34,7 +34,7 @@ public class ParticipanteRepository {
                 .findFirst();
     }
 
-    public List<Participante> listar() {
+    public List<Participante> listarParticipantes() {
         return new ArrayList<>(storage.values());
     }
 
