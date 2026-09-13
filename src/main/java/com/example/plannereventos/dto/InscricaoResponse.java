@@ -26,7 +26,7 @@ public class InscricaoResponse {
         this.id = inscricao.getId();
         this.eventoId = inscricao.getIdEvento();
         this.participanteId = inscricao.getParticipanteId();
-        this.DataCriacao = inscricao.getDataCriacaom();
+        this.dataCriacao = inscricao.getDataCriacao();
         this.status = inscricao.getStatus();
     }
 
@@ -55,11 +55,11 @@ public class InscricaoResponse {
     }
 
     public LocalDateTime getDataCriacao() {
-        return DataCriacao;
+        return dataCriacao;
     }
 
-    public void setDataCriacao(LocalDateTime DataCriacao) {
-        this.DataCriacao = criadoEm;
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
     }
 
     public String getStatus() {
