@@ -1,5 +1,6 @@
 package com.example.plannereventos.controller;
 
+import com.example.plannereventos.dto.InscricaoResponse;
 import com.example.plannereventos.dto.ParticipanteCreateRequest;
 import com.example.plannereventos.dto.ParticipanteResponse;
 import com.example.plannereventos.model.Inscricao;
@@ -32,13 +33,9 @@ public class ParticipanteController {
     }
 
     @GetMapping("/{participanteId}/inscricoes")
-    public ResponseEntity<?> listarInscricoesDoParticipante(@PathVariable UUID participanteId) {
-        try {
-            List<Inscricao> lista = inscricaoService.listarPorParticipante(participanteId);
-            return ResponseEntity.ok(lista); // 200 OK
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage()); // 404 Not Found
-        }
+    public ResponseEntity<List<InscricaoResponse>> listarInscricoesDoParticipante(@PathVariable UUID participanteId) {
+        List<InscricaoResponse> inscricoes = inscricaoService.listarPorParticipante(participanteId);
+        return ResponseEntity.ok(inscricoes);
     }
 
     @PutMapping("/{id}")
