@@ -3,7 +3,6 @@ package com.example.plannereventos.controller;
 import com.example.plannereventos.dto.InscricaoResponse;
 import com.example.plannereventos.dto.ParticipanteCreateRequest;
 import com.example.plannereventos.dto.ParticipanteResponse;
-import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.service.InscricaoService;
 import com.example.plannereventos.service.ParticipanteService;
 import jakarta.validation.Valid;
