@@ -7,7 +7,7 @@ import com.example.plannereventos.exception.ParticipanteNaoEncontradoException;
 import com.example.plannereventos.model.Participante;
 import com.example.plannereventos.repository.ParticipanteRepository;
 
-import  org.springframework.stereotype.Service;
+import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;

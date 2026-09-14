@@ -96,7 +96,7 @@ public class InscricaoService {
         Inscricao novaInscricao = new Inscricao();
         novaInscricao.setIdEvento(eventoId);
         novaInscricao.setParticipanteId(participanteId);
-        novaInscricao.setCriadoEm(LocalDateTime.now());
+        novaInscricao.setDataCriacao(LocalDateTime.now());
         novaInscricao.setStatus("CONFIRMADA");
 
         Inscricao inscricaoSalva = inscricaoRepository.cadastrar(novaInscricao);

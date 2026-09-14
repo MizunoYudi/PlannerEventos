@@ -1,4 +1,6 @@
 package com.example.plannereventos.model;
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -41,7 +43,7 @@ public class Inscricao {
         return status;
     }
 
-    public void setdataCriacao(LocalDateTime dataCriacao) {
+    public void setDataCriacao(LocalDateTime dataCriacao) {
         this.dataCriacao = dataCriacao;
     }
 
