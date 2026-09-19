@@ -2,6 +2,7 @@ package com.example.plannereventos.service;
 
 import com.example.plannereventos.dto.ParticipanteCreateRequest;
 import com.example.plannereventos.dto.ParticipanteResponse;
+import com.example.plannereventos.dto.ParticipanteUpdateRequest;
 import com.example.plannereventos.exception.EmailJaCadastradoException;
 import com.example.plannereventos.exception.ParticipanteNaoEncontradoException;
 import com.example.plannereventos.model.Participante;
@@ -20,7 +21,7 @@ public class ParticipanteService {
         this.participanteRepository = participanteRepository;
     }
 
-    public ParticipanteResponse cadastrarParticipante(ParticipanteCreateRequest request){
+    public ParticipanteResponse cadastrar(ParticipanteCreateRequest request){
         if(participanteRepository.existePorEmail(request.getEmail().trim())) {
             throw new EmailJaCadastradoException(request.getEmail());
         }
@@ -34,26 +35,24 @@ public class ParticipanteService {
         return ParticipanteResponse.fromEntity(salvo);
     }
 
-    public ParticipanteResponse atualizarParticipante(UUID id, ParticipanteCreateRequest request) {
+    public ParticipanteResponse atualizar(UUID id, ParticipanteUpdateRequest request) {
         Participante participante = participanteRepository.buscarPorId(id)
                 .orElseThrow(() -> new ParticipanteNaoEncontradoException(id));
 
-        String novoEmail = request.getEmail().trim().toLowerCase();
-        String emailAtual = participante.getEmail().trim().toLowerCase();
-
-        if (!emailAtual.equalsIgnoreCase(novoEmail)) {
-            if (participanteRepository.existePorEmail(novoEmail)) {
-                throw new EmailJaCadastradoException(request.getEmail());
-            }
+        if (!participante.getEmail().equalsIgnoreCase(request.getEmail().trim())
+                && participanteRepository.existePorEmail(request.getEmail().trim())) {
+            throw new EmailJaCadastradoException("E-mail já cadastrado");
         }
-        participante.setNome(request.getNome().trim());
-        participante.setEmail(novoEmail);
 
-        Participante salvo = participanteRepository.salvar(participante);
-        return ParticipanteResponse.fromEntity(salvo);
+        participante.setNome(request.getNome().trim());
+        participante.setEmail(request.getEmail().trim());
+
+        participanteRepository.salvar(participante);
+
+        return ParticipanteResponse.fromEntity(participante);
     }
 
-    public List<ParticipanteResponse> listarParticipantes() {
+    public List<ParticipanteResponse> listar() {
         return participanteRepository.listar()
                 .stream()
                 .map(ParticipanteResponse::fromEntity)
