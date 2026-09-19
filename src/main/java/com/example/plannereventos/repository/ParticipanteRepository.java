@@ -12,7 +12,7 @@ public class ParticipanteRepository {
 
     private final Map<UUID, Participante> storage = new ConcurrentHashMap<>();
 
-    public Participante salvarParticipante(Participante participante) {
+    public Participante salvar(Participante participante) {
         if (participante.getId() == null) {
             participante.setId(UUID.randomUUID());
         }
@@ -29,12 +29,13 @@ public class ParticipanteRepository {
 
     public Optional<Participante> buscarPorEmail(String email) {
         if (email == null) return Optional.empty();
+        String emailFormatado = email.trim();
         return storage.values().stream()
-                .filter(p -> email.equalsIgnoreCase(p.getEmail()))
+                .filter(p -> p.getEmail() != null && p.getEmail().equalsIgnoreCase(emailFormatado))
                 .findFirst();
     }
 
-    public List<Participante> listarParticipantes() {
+    public List<Participante> listar() {
         return new ArrayList<>(storage.values());
     }
 
@@ -43,8 +44,6 @@ public class ParticipanteRepository {
     }
 
     public boolean existePorEmail(String email) {
-        if (email == null) return false;
-        return storage.values().stream()
-                .anyMatch(p -> p.getEmail().equalsIgnoreCase(email.trim()));
+        return buscarPorEmail(email).isPresent();
     }
 }
