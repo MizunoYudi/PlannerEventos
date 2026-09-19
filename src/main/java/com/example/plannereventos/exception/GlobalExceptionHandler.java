@@ -1,163 +1,45 @@
 package com.example.plannereventos.exception;
 
-import com.example.plannereventos.dto.ErrorMessage;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.List;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(EmailJaCadastradoException.class)
-    public ResponseEntity<ErrorMessage> handleEmailJaCadastrado(
-            EmailJaCadastradoException ex,
-            HttpServletRequest request) {
+    @ExceptionHandler({
+            EmailJaCadastradoException.class,
+            InscricaoDuplicadaException.class,
+            EventoSemVagasException.class,
+            EventoCanceladoException.class,
+            EventoJaIniciadoException.class,
+            CancelamentoInscricaoInvalidoException.class
+    })
+    public ResponseEntity<String> handleRegraDeNegocio(Exception ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
 
-        ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.CONFLICT.value(),
-                "Regra de Negocio Violada",
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    @ExceptionHandler({
+            ParticipanteNaoEncontradoException.class,
+            EventoNaoEncontradoException.class,
+            InscricaoNaoEncontradaException.class
+    })
+    public ResponseEntity<String> handleRecursoNaoEncontrado(Exception ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorMessage> handleValidacao(
-            MethodArgumentNotValidException ex,
-            HttpServletRequest request) {
-
-        List<String> erros = ex.getBindingResult()
+    public ResponseEntity<String> handleValidacao(MethodArgumentNotValidException ex) {
+        String erros = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(error ->
-                        error.getField() + ": " + error.getDefaultMessage()
-                )
-                .toList();
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
 
-        ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.BAD_REQUEST.value(),
-                "Erro de Validacao",
-                erros,
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-    }
-
-    @ExceptionHandler(ParticipanteNaoEncontradoException.class)
-    public ResponseEntity<ErrorMessage> handleParticipanteNaoEncontrado(
-            ParticipanteNaoEncontradoException ex,
-            HttpServletRequest request) {
-
-        ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.NOT_FOUND.value(),
-                "Recurso Nao Encontrado",
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
-    }
-
-    @ExceptionHandler(EventoNaoEncontradoException.class)
-    public ResponseEntity<ErrorMessage> handleEventoNaoEncontrado(
-            EventoNaoEncontradoException ex,
-            HttpServletRequest request) {
-
-        ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.NOT_FOUND.value(),
-                "Recurso Nao Encontrado",
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
-    }
-
-    @ExceptionHandler(InscricaoNaoEncontradaException.class)
-    public ResponseEntity<ErrorMessage> handleInscricaoNaoEncontrada(
-            InscricaoNaoEncontradaException ex,
-            HttpServletRequest request) {
-
-        ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.NOT_FOUND.value(),
-                "Recurso Nao Encontrado",
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
-    }
-
-    @ExceptionHandler(InscricaoDuplicadaException.class)
-    public ResponseEntity<ErrorMessage> handleInscricaoDuplicada(
-            InscricaoDuplicadaException ex,
-            HttpServletRequest request) {
-
-        ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.CONFLICT.value(),
-                "Regra de Negocio Violada",
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
-    }
-
-    @ExceptionHandler(EventoSemVagasException.class)
-    public ResponseEntity<ErrorMessage> handleEventoSemVagas(
-            EventoSemVagasException ex,
-            HttpServletRequest request) {
-
-        ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.CONFLICT.value(),
-                "Regra de Negocio Violada",
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
-    }
-
-    @ExceptionHandler(EventoCanceladoException.class)
-    public ResponseEntity<ErrorMessage> handleEventoCancelado(
-            EventoCanceladoException ex,
-            HttpServletRequest request) {
-
-        ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.CONFLICT.value(),
-                "Regra de Negocio Violada",
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
-    }
-
-    @ExceptionHandler(EventoJaIniciadoException.class)
-    public ResponseEntity<ErrorMessage> handleEventoJaIniciado(
-            EventoJaIniciadoException ex,
-            HttpServletRequest request) {
-
-        ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.CONFLICT.value(),
-                "Regra de Negocio Violada",
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
-    }
-
-    @ExceptionHandler(CancelamentoInscricaoInvalidoException.class)
-    public ResponseEntity<ErrorMessage> handleCancelamentoInscricaoInvalido(
-            CancelamentoInscricaoInvalidoException ex,
-            HttpServletRequest request) {
-
-        ErrorMessage errorResponse = new ErrorMessage(
-                HttpStatus.CONFLICT.value(),
-                "Regra de Negocio Violada",
-                List.of(ex.getMessage()),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erros);
     }
 }
