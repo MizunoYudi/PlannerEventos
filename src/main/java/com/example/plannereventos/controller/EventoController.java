@@ -1,9 +1,7 @@
 package com.example.plannereventos.controller;
 
 import com.example.plannereventos.dto.*;
-import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.service.EventoService;
-import com.example.plannereventos.service.InscricaoService;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -17,11 +15,9 @@ import java.util.List;
 public class EventoController {
 
     private final EventoService eventoService;
-    private final InscricaoService inscricaoService;
 
-    public EventoController(EventoService eventoService, InscricaoService inscricaoService) {
+    public EventoController(EventoService eventoService) {
         this.eventoService = eventoService;
-        this.inscricaoService = inscricaoService;
     }
 
     @PostMapping
@@ -29,11 +25,13 @@ public class EventoController {
         EventoResponse response = eventoService.cadastrar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<EventoResponse> atualizar(@PathVariable int id, @Valid @RequestBody EventoUpdateRequest request) {
         EventoResponse response = eventoService.atualizar(id, request);
         return ResponseEntity.ok(response);
     }
+
     @PatchMapping("/{id}/cancelamento")
     public ResponseEntity<EventoResponse> cancelar(@PathVariable int id) {
         EventoResponse response = eventoService.cancelar(id);
@@ -50,7 +48,6 @@ public class EventoController {
         return ResponseEntity.ok(eventoService.buscarPorId(id));
     }
 
-    // RF06: GET /api/eventos/{id}/vagas
     @GetMapping("/{id}/vagas")
     public ResponseEntity<EventoVagasResponse> consultarVagas(@PathVariable int id) {
         return ResponseEntity.ok(eventoService.consultarVagas(id));
