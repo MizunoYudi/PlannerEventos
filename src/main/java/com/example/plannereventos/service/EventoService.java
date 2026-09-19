@@ -1,8 +1,11 @@
 package com.example.plannereventos.service;
+
 import com.example.plannereventos.dto.EventoCreateRequest;
 import com.example.plannereventos.dto.EventoResponse;
 import com.example.plannereventos.dto.EventoUpdateRequest;
 import com.example.plannereventos.dto.EventoVagasResponse;
+import com.example.plannereventos.exception.EventoCanceladoException;
+import com.example.plannereventos.exception.EventoJaIniciadoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.repository.EventoRepository;
@@ -15,14 +18,16 @@ import java.util.List;
 @Service
 public class EventoService {
 
-    private EventoRepository eventoRepository;
-    private InscricaoRepository inscricaoRepository;
+    private static final String STATUS_ATIVO = "ATIVO";
+    private static final String STATUS_CANCELADO = "CANCELADO";
+
+    private final EventoRepository eventoRepository;
+    private final InscricaoRepository inscricaoRepository;
 
     public EventoService(EventoRepository eventoRepository, InscricaoRepository inscricaoRepository) {
         this.eventoRepository = eventoRepository;
         this.inscricaoRepository = inscricaoRepository;
     }
-
 
     public EventoResponse cadastrar(EventoCreateRequest request) {
         Evento evento = new Evento();
@@ -33,51 +38,62 @@ public class EventoService {
         evento.setHoraFim(request.getHoraFim());
         evento.setLocal(request.getLocal());
         evento.setCapacidadeMaxima(request.getCapacidadeMaxima());
-        evento.setStatus("ATIVO");
+        evento.setStatus(STATUS_ATIVO);
         evento.setCriadoEm(LocalDateTime.now());
 
         eventoRepository.salvar(evento);
-
         return EventoResponse.fromEntity(evento);
     }
 
-   public EventoResponse atualizar(int id, EventoUpdateRequest request) {
-       Evento existente = eventoRepository.buscarPorId(id);
-       if (existente == null) {
-           throw new EventoNaoEncontradoException(id);
-       }
+    public EventoResponse atualizar(int id, EventoUpdateRequest request) {
+        Evento existente = buscarEventoOuLancarExcecao(id);
 
-       existente.setTitulo(request.getTitulo());
-       existente.setDescricao(request.getDescricao());
-       existente.setData(request.getData());
-       existente.setHoraInicio(request.getHoraInicio());
-       existente.setHoraFim(request.getHoraFim());
-       existente.setLocal(request.getLocal());
-       existente.setCapacidadeMaxima(request.getCapacidadeMaxima());
-
-       Evento atualizado = eventoRepository.atualizar(existente);
-       return new EventoResponse(atualizado);
-   }
-    public EventoResponse cancelar(int id) {
-        if (eventoRepository.buscarPorId(id) == null) {
-            throw new EventoNaoEncontradoException(id);
+        if (STATUS_CANCELADO.equalsIgnoreCase(existente.getStatus())) {
+            throw new EventoCanceladoException(id);
         }
-        Evento cancelado = eventoRepository.cancelar(id);
-        return new EventoResponse(cancelado);
+
+        existente.setTitulo(request.getTitulo());
+        existente.setDescricao(request.getDescricao());
+        existente.setData(request.getData());
+        existente.setHoraInicio(request.getHoraInicio());
+        existente.setHoraFim(request.getHoraFim());
+        existente.setLocal(request.getLocal());
+        existente.setCapacidadeMaxima(request.getCapacidadeMaxima());
+
+        eventoRepository.salvar(existente);
+        return EventoResponse.fromEntity(existente);
     }
 
-    public List<EventoResponse> listar(){
+    public EventoResponse cancelar(int id) {
+        Evento evento = buscarEventoOuLancarExcecao(id);
+
+        if (STATUS_CANCELADO.equalsIgnoreCase(evento.getStatus())) {
+            throw new EventoCanceladoException(id);
+        }
+
+        LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), evento.getHoraInicio());
+        if (LocalDateTime.now().isAfter(inicioEvento)) {
+            throw new EventoJaIniciadoException(id);
+        }
+
+        evento.setStatus(STATUS_CANCELADO);
+        eventoRepository.salvar(evento);
+        return EventoResponse.fromEntity(evento);
+    }
+
+    public List<EventoResponse> listar() {
         return eventoRepository.listar()
                 .stream()
-                .map(EventoResponse::new)
+                .map(EventoResponse::fromEntity)
                 .toList();
     }
 
+    public EventoResponse buscarPorId(int id) {
+        return EventoResponse.fromEntity(buscarEventoOuLancarExcecao(id));
+    }
+
     public EventoVagasResponse consultarVagas(int id) {
-        Evento evento = eventoRepository.buscarPorId(id);
-        if (evento == null) {
-            throw new EventoNaoEncontradoException(id);
-        }
+        Evento evento = buscarEventoOuLancarExcecao(id);
 
         int confirmadas = inscricaoRepository.contarConfirmadasPorEvento(id);
         int vagasDisponiveis = Math.max(0, evento.getCapacidadeMaxima() - confirmadas);
@@ -90,11 +106,8 @@ public class EventoService {
         );
     }
 
-    public EventoResponse buscarPorId(int id) {
-        Evento evento = eventoRepository.buscarPorId(id);
-        if (evento == null) {
-            throw new EventoNaoEncontradoException(id);
-        }
-        return EventoResponse.fromEntity(evento);
+    private Evento buscarEventoOuLancarExcecao(int id) {
+        return eventoRepository.buscarPorId(id)
+                .orElseThrow(() -> new EventoNaoEncontradoException(id));
     }
 }
