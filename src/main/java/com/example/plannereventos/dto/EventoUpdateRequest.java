@@ -29,6 +29,10 @@ public class EventoUpdateRequest {
 
     private String local;
 
+    public void setCapacidadeMaxima(int capacidadeMaxima) {
+        this.capacidadeMaxima = capacidadeMaxima;
+    }
+
     @Positive(message = "A capacidade deve ser maior que 0")
     private int capacidadeMaxima;
 
