@@ -5,56 +5,34 @@ import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Repository
 public class EventoRepository {
 
-    private List<Evento> eventos = new ArrayList<>();
+    private final Map<Integer, Evento> storage = new ConcurrentHashMap<>();
+    private final AtomicInteger idSequence = new AtomicInteger(1);
 
-    //criar um evento
-    public Evento salvar(Evento evento){
-        evento.setId(eventos.size() + 1);
-        eventos.add(evento);
+    public Evento salvar(Evento evento) {
+        if (evento.getId() <= 0) {
+            evento.setId(idSequence.getAndIncrement());
+        }
+        storage.put(evento.getId(), evento);
         return evento;
     }
 
-    //listar todos os eventos
-    public List<Evento> listar(){
-        return eventos;
+    public List<Evento> listar() {
+        return new ArrayList<>(storage.values());
     }
 
-    //buscando um evento pelo id correspondente
-    public Evento buscarPorId(int id) {
-        for(Evento evento : eventos){
-            if(evento.getId() ==  id){
-                return evento;
-            }
-        }
-        return null;
+    public Optional<Evento> buscarPorId(int id) {
+        return Optional.ofNullable(storage.get(id));
     }
 
-    //atualizando um evento através do id da lista e comparando se é igual ao id do evento passado por parametro
-    public Evento atualizar(Evento evento){
-        for (int i = 0; i < eventos.size(); i++){
-           if(eventos.get(i).getId() == evento.getId()){
-               eventos.set(i, evento);
-               return evento;
-           }
-        }
-        return null;
-    }
-
-    //cancelando um evento.... buscando pelo id e atualizando o 'status' do evento
-    public Evento cancelar(int id) {
-        Evento evento = buscarPorId(id);
-        if(evento != null){
-            evento.setStatus("CANCELADO");
-            atualizar(evento);
-
-            return evento;
-        }
-        else{
-            return null;
-        }
+    public boolean existePorId(int id) {
+        return storage.containsKey(id);
     }
 }
