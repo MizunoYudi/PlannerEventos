@@ -3,6 +3,7 @@ package com.example.plannereventos.controller;
 import com.example.plannereventos.dto.InscricaoResponse;
 import com.example.plannereventos.dto.ParticipanteCreateRequest;
 import com.example.plannereventos.dto.ParticipanteResponse;
+import com.example.plannereventos.dto.ParticipanteUpdateRequest;
 import com.example.plannereventos.service.InscricaoService;
 import com.example.plannereventos.service.ParticipanteService;
 import jakarta.validation.Valid;
@@ -40,7 +41,7 @@ public class ParticipanteController {
     @PutMapping("/{id}")
     public ResponseEntity<ParticipanteResponse> atualizarParticipante(
             @PathVariable UUID id,
-            @Valid @RequestBody ParticipanteCreateRequest request) {
+            @Valid @RequestBody ParticipanteUpdateRequest request) {
         ParticipanteResponse response = participanteService.atualizarParticipante(id, request);
         return ResponseEntity.ok(response);
     }

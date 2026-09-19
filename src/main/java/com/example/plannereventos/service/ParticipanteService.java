@@ -30,7 +30,7 @@ public class ParticipanteService {
         participante.setEmail(request.getEmail().trim().toLowerCase());
         participante.setCriadoEm(LocalDateTime.now());
 
-        Participante salvo = participanteRepository.salvarParticipante(participante);
+        Participante salvo = participanteRepository.salvar(participante);
         return ParticipanteResponse.fromEntity(salvo);
     }
 
@@ -49,12 +49,12 @@ public class ParticipanteService {
         participante.setNome(request.getNome().trim());
         participante.setEmail(novoEmail);
 
-        Participante salvo = participanteRepository.salvarParticipante(participante);
+        Participante salvo = participanteRepository.salvar(participante);
         return ParticipanteResponse.fromEntity(salvo);
     }
 
     public List<ParticipanteResponse> listarParticipantes() {
-        return participanteRepository.listarParticipantes()
+        return participanteRepository.listar()
                 .stream()
                 .map(ParticipanteResponse::fromEntity)
                 .toList();
