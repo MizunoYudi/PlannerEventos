@@ -2,14 +2,7 @@ package com.example.plannereventos.service;
 
 import com.example.plannereventos.dto.InscricaoCreateRequest;
 import com.example.plannereventos.dto.InscricaoResponse;
-import com.example.plannereventos.exception.CancelamentoInscricaoInvalidoException;
-import com.example.plannereventos.exception.EventoCanceladoException;
-import com.example.plannereventos.exception.EventoJaIniciadoException;
-import com.example.plannereventos.exception.EventoNaoEncontradoException;
-import com.example.plannereventos.exception.EventoSemVagasException;
-import com.example.plannereventos.exception.InscricaoDuplicadaException;
-import com.example.plannereventos.exception.InscricaoNaoEncontradaException;
-import com.example.plannereventos.exception.ParticipanteNaoEncontradoException;
+import com.example.plannereventos.exception.*;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.repository.EventoRepository;
@@ -24,51 +17,51 @@ import java.util.UUID;
 @Service
 public class InscricaoService {
 
+    private static final String STATUS_CONFIRMADA = "CONFIRMADA";
+    private static final String STATUS_CANCELADA = "CANCELADA";
+
     private final InscricaoRepository inscricaoRepository;
     private final EventoRepository eventoRepository;
     private final ParticipanteRepository participanteRepository;
 
-    public InscricaoService(InscricaoRepository inscricaoRepository, EventoRepository eventoRepository, ParticipanteRepository participanteRepository) {
+    public InscricaoService(InscricaoRepository inscricaoRepository,
+                            EventoRepository eventoRepository,
+                            ParticipanteRepository participanteRepository) {
         this.inscricaoRepository = inscricaoRepository;
         this.eventoRepository = eventoRepository;
         this.participanteRepository = participanteRepository;
     }
 
     public List<InscricaoResponse> listarPorEvento(int eventoId) {
-        Evento evento = eventoRepository.buscarPorId(eventoId);
-
-        if (evento == null) {
-            throw new EventoNaoEncontradoException(eventoId);
-        }
-        return inscricaoRepository.listarPorEvento(eventoId).stream().map(InscricaoResponse::new).toList();
+        validarExistenciaEvento(eventoId);
+        return inscricaoRepository.listarPorEvento(eventoId)
+                .stream()
+                .map(InscricaoResponse::new)
+                .toList();
     }
 
     public List<InscricaoResponse> listarPorParticipante(UUID participanteId) {
-        participanteRepository.buscarPorId(participanteId).orElseThrow(() -> new ParticipanteNaoEncontradoException(participanteId));
-        return inscricaoRepository.listarPorParticipante(participanteId).stream().map(InscricaoResponse::new).toList();
+        validarExistenciaParticipante(participanteId);
+        return inscricaoRepository.listarPorParticipante(participanteId)
+                .stream()
+                .map(InscricaoResponse::new)
+                .toList();
     }
 
     public InscricaoResponse buscarPorEventoEParticipante(int eventoId, UUID participanteId) {
-        Evento evento = eventoRepository.buscarPorId(eventoId);
-        if (evento == null) {
-            throw new EventoNaoEncontradoException(eventoId);
-        }
-        participanteRepository.buscarPorId(participanteId).orElseThrow(() -> new ParticipanteNaoEncontradoException(participanteId));
-        Inscricao inscricao = inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId);
-        if (inscricao == null) {
-            throw new InscricaoNaoEncontradaException(eventoId, participanteId);
-        }
+        validarExistenciaEvento(eventoId);
+        validarExistenciaParticipante(participanteId);
+
+        Inscricao inscricao = inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId)
+                .orElseThrow(() -> new InscricaoNaoEncontradaException(eventoId, participanteId));
+
         return new InscricaoResponse(inscricao);
     }
 
     public InscricaoResponse inscrever(int eventoId, InscricaoCreateRequest request) {
-        Evento evento = eventoRepository.buscarPorId(eventoId);
-        if (evento == null) {
-            throw new EventoNaoEncontradoException(eventoId);
-        }
-
+        Evento evento = buscarEventoOuFalhar(eventoId);
         UUID participanteId = request.getParticipanteId();
-        participanteRepository.buscarPorId(participanteId).orElseThrow(() -> new ParticipanteNaoEncontradoException(participanteId));
+        validarExistenciaParticipante(participanteId);
 
         if ("CANCELADO".equalsIgnoreCase(evento.getStatus())) {
             throw new EventoCanceladoException(eventoId);
@@ -78,14 +71,9 @@ public class InscricaoService {
         if (!LocalDateTime.now().isBefore(inicioEvento)) {
             throw new EventoJaIniciadoException(eventoId);
         }
-        for (Inscricao inscricao : inscricaoRepository.listarPorEvento(eventoId)) {
 
-            boolean mesmoParticipante = inscricao.getParticipanteId().equals(participanteId);
-            boolean confirmada = "CONFIRMADA".equalsIgnoreCase(inscricao.getStatus());
-
-            if (mesmoParticipante && confirmada) {
-                throw new InscricaoDuplicadaException(eventoId, participanteId);
-            }
+        if (inscricaoRepository.existeConfirmada(eventoId, participanteId)) {
+            throw new InscricaoDuplicadaException(eventoId, participanteId);
         }
 
         int inscricoesConfirmadas = inscricaoRepository.contarConfirmadasPorEvento(eventoId);
@@ -97,27 +85,41 @@ public class InscricaoService {
         novaInscricao.setIdEvento(eventoId);
         novaInscricao.setParticipanteId(participanteId);
         novaInscricao.setDataCriacao(LocalDateTime.now());
-        novaInscricao.setStatus("CONFIRMADA");
+        novaInscricao.setStatus(STATUS_CONFIRMADA);
 
-        Inscricao inscricaoSalva = inscricaoRepository.cadastrar(novaInscricao);
-
+        Inscricao inscricaoSalva = inscricaoRepository.salvar(novaInscricao);
         return new InscricaoResponse(inscricaoSalva);
     }
 
     public void cancelarInscricao(int eventoId, UUID participanteId) {
-        Evento evento = eventoRepository.buscarPorId(eventoId);
+        validarExistenciaEvento(eventoId);
+        validarExistenciaParticipante(participanteId);
 
-        if (evento == null) {
-            throw new EventoNaoEncontradoException(eventoId);
-        }
-        participanteRepository.buscarPorId(participanteId).orElseThrow(() -> new ParticipanteNaoEncontradoException(participanteId));
-        Inscricao inscricao = inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId);
-        if (inscricao == null) {
-            throw new InscricaoNaoEncontradaException(eventoId, participanteId);
-        }
-        if (!"CONFIRMADA".equalsIgnoreCase(inscricao.getStatus())) {
+        Inscricao inscricao = inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId)
+                .orElseThrow(() -> new InscricaoNaoEncontradaException(eventoId, participanteId));
+
+        if (!STATUS_CONFIRMADA.equalsIgnoreCase(inscricao.getStatus())) {
             throw new CancelamentoInscricaoInvalidoException();
         }
-        inscricao.setStatus("CANCELADA");
+
+        inscricao.setStatus(STATUS_CANCELADA);
+        inscricaoRepository.salvar(inscricao);
+    }
+
+    private Evento buscarEventoOuFalhar(int eventoId) {
+        return eventoRepository.buscarPorId(eventoId)
+                .orElseThrow(() -> new EventoNaoEncontradoException(eventoId));
+    }
+
+    private void validarExistenciaEvento(int eventoId) {
+        if (!eventoRepository.existePorId(eventoId)) {
+            throw new EventoNaoEncontradoException(eventoId);
+        }
+    }
+
+    private void validarExistenciaParticipante(UUID participanteId) {
+        if (!participanteRepository.existePorId(participanteId)) {
+            throw new ParticipanteNaoEncontradoException(participanteId);
+        }
     }
 }

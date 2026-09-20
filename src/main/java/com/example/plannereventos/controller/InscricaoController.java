@@ -2,7 +2,6 @@ package com.example.plannereventos.controller;
 
 import com.example.plannereventos.dto.InscricaoCreateRequest;
 import com.example.plannereventos.dto.InscricaoResponse;
-import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.service.InscricaoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -23,7 +22,7 @@ public class InscricaoController {
     }
 
     @PostMapping
-    public ResponseEntity<InscricaoResponse> salvarInscricao(
+    public ResponseEntity<InscricaoResponse> inscrever(
             @PathVariable int eventoId,
             @Valid @RequestBody InscricaoCreateRequest request) {
         InscricaoResponse response = inscricaoService.inscrever(eventoId, request);
@@ -36,7 +35,7 @@ public class InscricaoController {
     }
 
     @GetMapping("/{participanteId}")
-    public ResponseEntity<InscricaoResponse> buscarPorId(
+    public ResponseEntity<InscricaoResponse> buscarPorEventoEParticipante(
             @PathVariable int eventoId,
             @PathVariable UUID participanteId) {
         return ResponseEntity.ok(inscricaoService.buscarPorEventoEParticipante(eventoId, participanteId));

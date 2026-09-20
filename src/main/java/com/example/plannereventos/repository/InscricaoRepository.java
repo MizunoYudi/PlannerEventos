@@ -1,85 +1,68 @@
 package com.example.plannereventos.repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
 import com.example.plannereventos.model.Inscricao;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 @Repository
-
 public class InscricaoRepository {
-    private List<Inscricao> inscricoes = new ArrayList<>();
-    private int proximoId = 1;
 
-    public Inscricao cadastrar(Inscricao inscricao) {
-        inscricao.setId(proximoId);
-        proximoId++;
-        inscricoes.add(inscricao);
+    private final Map<Integer, Inscricao> storage = new ConcurrentHashMap<>();
+    private final AtomicInteger idSequence = new AtomicInteger(1);
+
+    public Inscricao salvar(Inscricao inscricao) {
+        if (inscricao.getId() <= 0) {
+            inscricao.setId(idSequence.getAndIncrement());
+        }
+        storage.put(inscricao.getId(), inscricao);
         return inscricao;
     }
 
-    public List<Inscricao> listarInscricoes() {
-        return inscricoes;
+    public List<Inscricao> listarTodos() {
+        return new ArrayList<>(storage.values());
     }
 
-    public Inscricao buscarPorId(int id) {
-        for (Inscricao p : inscricoes) {
-            if (p.getId() == id) {
-                return p;
-            }
-        }
-        return null;
-    }
-
-    public boolean cancelar(int id) {
-        Inscricao inscricao = buscarPorId(id);
-        if (inscricao != null) {
-            inscricao.setStatus("CANCELADA");
-            return true;
-        }
-        return false;
+    public Optional<Inscricao> buscarPorId(int id) {
+        return Optional.ofNullable(storage.get(id));
     }
 
     public List<Inscricao> listarPorEvento(int idEvento) {
-        List<Inscricao> filtradas = new ArrayList<>();
-        for (Inscricao p : inscricoes) {
-            if (p.getIdEvento() == idEvento) {
-                filtradas.add(p);
-            }
-        }
-        return filtradas;
+        return storage.values().stream()
+                .filter(i -> i.getIdEvento() == idEvento)
+                .toList();
     }
 
     public List<Inscricao> listarPorParticipante(UUID participanteId) {
-        List<Inscricao> filtradas = new ArrayList<>();
-        for (Inscricao p : inscricoes) {
-            if (p.getParticipanteId().equals(participanteId)) {
-                filtradas.add(p);
-            }
-        }
-        return filtradas;
+        return storage.values().stream()
+                .filter(i -> participanteId.equals(i.getParticipanteId()))
+                .toList();
     }
 
     public int contarConfirmadasPorEvento(int idEvento) {
-        int contador = 0;
-        for (Inscricao p : inscricoes) {
-            if (p.getIdEvento() == idEvento && "CONFIRMADA".equalsIgnoreCase(p.getStatus())) {
-                contador++;
-            }
-        }
-        return contador;
+        return (int) storage.values().stream()
+                .filter(i -> i.getIdEvento() == idEvento && "CONFIRMADA".equalsIgnoreCase(i.getStatus()))
+                .count();
     }
 
-    public Inscricao buscarPorEventoEParticipante(int eventoId, UUID participanteId) {
-        if (participanteId == null) return null;
-        for (Inscricao inscricao : inscricoes) {
-            if (inscricao.getIdEvento() == eventoId && participanteId.equals(inscricao.getParticipanteId())) {
-                return inscricao;
-            }
-        }
-        return null;
+    public Optional<Inscricao> buscarPorEventoEParticipante(int eventoId, UUID participanteId) {
+        if (participanteId == null) return Optional.empty();
+        return storage.values().stream()
+                .filter(i -> i.getIdEvento() == eventoId && participanteId.equals(i.getParticipanteId()))
+                .findFirst();
+    }
+
+    public boolean existeConfirmada(int eventoId, UUID participanteId) {
+        if (participanteId == null) return false;
+        return storage.values().stream()
+                .anyMatch(i -> i.getIdEvento() == eventoId
+                        && participanteId.equals(i.getParticipanteId())
+                        && "CONFIRMADA".equalsIgnoreCase(i.getStatus()));
     }
 }
-
