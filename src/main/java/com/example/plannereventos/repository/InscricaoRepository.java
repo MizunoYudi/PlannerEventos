@@ -65,4 +65,10 @@ public class InscricaoRepository {
                         && participanteId.equals(i.getParticipanteId())
                         && "CONFIRMADA".equalsIgnoreCase(i.getStatus()));
     }
+
+    public void cancelarTodasPorEvento(int eventoId) {
+        storage.values().stream()
+                .filter(i -> i.getIdEvento() == eventoId && "CONFIRMADA".equalsIgnoreCase(i.getStatus()))
+                .forEach(i -> i.setStatus("CANCELADA"));
+    }
 }

@@ -78,6 +78,9 @@ public class EventoService {
 
         evento.setStatus(STATUS_CANCELADO);
         eventoRepository.salvar(evento);
+
+        inscricaoRepository.cancelarTodasPorEvento(id);
+
         return EventoResponse.fromEntity(evento);
     }
 
