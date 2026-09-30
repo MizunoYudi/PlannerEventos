@@ -1,6 +1,8 @@
 package com.example.plannereventos.dto;
 
 import com.example.plannereventos.model.Inscricao;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -8,18 +10,23 @@ public class InscricaoResponse {
     private int id;
     private int eventoId;
     private UUID participanteId;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dataCriacao;
+
     private String status;
+    private String motivoCancelamento;
 
     public InscricaoResponse() {
     }
 
-    public InscricaoResponse(int id, int eventoId, UUID participanteId, LocalDateTime dataCriacao, String status) {
+    public InscricaoResponse(int id, int eventoId, UUID participanteId, LocalDateTime dataCriacao, String status, String motivoCancelamento) {
         this.id = id;
         this.eventoId = eventoId;
         this.participanteId = participanteId;
         this.dataCriacao = dataCriacao;
         this.status = status;
+        this.motivoCancelamento = motivoCancelamento;
     }
 
     public InscricaoResponse(Inscricao inscricao) {
@@ -28,6 +35,7 @@ public class InscricaoResponse {
         this.participanteId = inscricao.getParticipanteId();
         this.dataCriacao = inscricao.getDataCriacao();
         this.status = inscricao.getStatus();
+        this.motivoCancelamento = inscricao.getMotivoCancelamento();
     }
 
     public int getId() {
@@ -68,5 +76,13 @@ public class InscricaoResponse {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getMotivoCancelamento() {
+        return motivoCancelamento;
+    }
+
+    public void setMotivoCancelamento(String motivoCancelamento) {
+        this.motivoCancelamento = motivoCancelamento;
     }
 }
