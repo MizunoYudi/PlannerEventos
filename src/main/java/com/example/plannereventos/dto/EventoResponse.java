@@ -121,4 +121,20 @@ public class EventoResponse {
     public void setCriadoEm(LocalDateTime criadoEm) {
         this.criadoEm = criadoEm;
     }
+
+    public ModalidadeEvento getModalidade() {
+        return modalidade;
+    }
+
+    public void setModalidade(ModalidadeEvento modalidade) {
+        this.modalidade = modalidade;
+    }
+
+    public Integer getIdadeMinima() {
+        return idadeMinima;
+    }
+
+    public void setIdadeMinima(Integer idadeMinima) {
+        this.idadeMinima = idadeMinima;
+    }
 }
