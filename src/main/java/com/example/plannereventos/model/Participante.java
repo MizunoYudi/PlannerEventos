@@ -1,5 +1,6 @@
 package com.example.plannereventos.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -9,15 +10,20 @@ public class Participante {
     private String nome;
     private String email;
     private LocalDateTime criadoEm;
+    private String matricula;
+    private Boolean matriculaAtiva;
+    private LocalDate dataNascimento;
 
     public Participante() {
     }
 
-    public Participante(String nome, String email) {
-        this.id = UUID.randomUUID();
+    public Participante(UUID id, String nome, String email, String matricula, Boolean matriculaAtiva, LocalDate dataNascimento) {
+        this.id = id;
         this.nome = nome;
         this.email = email;
-        this.criadoEm = LocalDateTime.now();
+        this.matricula = matricula;
+        this.matriculaAtiva = matriculaAtiva;
+        this.dataNascimento = dataNascimento;
     }
 
     public Participante(UUID id, String nome, String email, LocalDateTime criadoEm) {
@@ -80,5 +86,29 @@ public class Participante {
                 ", email='" + email + '\'' +
                 ", criadoEm=" + criadoEm +
                 '}';
+    }
+
+    public String getMatricula() {
+        return matricula;
+    }
+
+    public void setMatricula(String matricula) {
+        this.matricula = matricula;
+    }
+
+    public Boolean getMatriculaAtiva() {
+        return matriculaAtiva;
+    }
+
+    public void setMatriculaAtiva(Boolean matriculaAtiva) {
+        this.matriculaAtiva = matriculaAtiva;
+    }
+
+    public LocalDate getDataNascimento() {
+        return dataNascimento;
+    }
+
+    public void setDataNascimento(LocalDate dataNascimento) {
+        this.dataNascimento = dataNascimento;
     }
 }

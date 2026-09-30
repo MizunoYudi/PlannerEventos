@@ -126,4 +126,12 @@ public class Evento {
     public void setModalidade(ModalidadeEvento modalidade) {
         this.modalidade = modalidade;
     }
+
+    public Integer getIdadeMinima() {
+        return idadeMinima;
+    }
+
+    public void setIdadeMinima(Integer idadeMinima) {
+        this.idadeMinima = idadeMinima;
+    }
 }
