@@ -8,6 +8,7 @@ import com.example.plannereventos.exception.EventoCanceladoException;
 import com.example.plannereventos.exception.EventoJaIniciadoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.model.Evento;
+import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,8 @@ public class EventoService {
         evento.setHoraFim(request.getHoraFim());
         evento.setLocal(request.getLocal());
         evento.setCapacidadeMaxima(request.getCapacidadeMaxima());
+        evento.setModalidade(request.getModalidade() != null ? request.getModalidade() : ModalidadeEvento.ABERTO);
+        evento.setIdadeMinima(request.getIdadeMinima());
         evento.setStatus(STATUS_ATIVO);
         evento.setCriadoEm(LocalDateTime.now());
 
@@ -59,12 +62,14 @@ public class EventoService {
         existente.setHoraFim(request.getHoraFim());
         existente.setLocal(request.getLocal());
         existente.setCapacidadeMaxima(request.getCapacidadeMaxima());
+        existente.setModalidade(request.getModalidade() != null ? request.getModalidade() : ModalidadeEvento.ABERTO);
+        existente.setIdadeMinima(request.getIdadeMinima());
 
         eventoRepository.salvar(existente);
         return EventoResponse.fromEntity(existente);
     }
 
-    public EventoResponse cancelar(int id) {
+    public EventoResponse cancelar(int id, String motivo) {
         Evento evento = buscarEventoOuLancarExcecao(id);
 
         if (STATUS_CANCELADO.equalsIgnoreCase(evento.getStatus())) {
@@ -79,7 +84,8 @@ public class EventoService {
         evento.setStatus(STATUS_CANCELADO);
         eventoRepository.salvar(evento);
 
-        inscricaoRepository.cancelarTodasPorEvento(id);
+        String justificativa = (motivo != null && !motivo.isBlank()) ? motivo : "Evento cancelado pelo organizador";
+        inscricaoRepository.cancelarTodasPorEvento(id, justificativa);
 
         return EventoResponse.fromEntity(evento);
     }
