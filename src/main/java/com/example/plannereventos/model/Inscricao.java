@@ -10,17 +10,19 @@ public class Inscricao {
     private UUID participanteId;
     private LocalDateTime dataCriacao;
     private String status = "CONFIRMADA";
+    private String motivoCancelamento;
 
     @JsonCreator
     public Inscricao(){
     }
 
-    public Inscricao(int id, int idEvento, UUID participanteId, LocalDateTime dataCriacao, String status){
+    public Inscricao(int id, int idEvento, UUID participanteId, LocalDateTime dataCriacao, String status, String motivoCancelamento){
         this.id = id;
         this.dataCriacao = dataCriacao;
         this.idEvento = idEvento;
         this.participanteId = participanteId;
         this.status = status;
+        this.motivoCancelamento = motivoCancelamento;
     }
 
     public LocalDateTime getDataCriacao() {
@@ -59,5 +61,13 @@ public class Inscricao {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getMotivoCancelamento() {
+        return motivoCancelamento;
+    }
+
+    public void setMotivoCancelamento(String motivoCancelamento) {
+        this.motivoCancelamento = motivoCancelamento;
     }
 }
