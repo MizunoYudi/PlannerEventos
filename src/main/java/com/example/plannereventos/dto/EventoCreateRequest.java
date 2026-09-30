@@ -1,5 +1,6 @@
 package com.example.plannereventos.dto;
 
+import com.example.plannereventos.model.ModalidadeEvento;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -32,6 +33,11 @@ public class EventoCreateRequest {
     @Min(value = 1, message = "A capacidade maxima deve ser maior que 0")
     private int capacidadeMaxima;
 
+    private ModalidadeEvento modalidade = ModalidadeEvento.ABERTO;
+
+    @Min(value = 0, message = "A idade minima nao pode ser negativa")
+    private Integer idadeMinima;
+
     public EventoCreateRequest() {
     }
 
@@ -42,8 +48,8 @@ public class EventoCreateRequest {
                                LocalTime horaFim,
                                String local,
                                int capacidadeMaxima,
-                               String status,
-                               LocalDateTime registroCriacao) {
+                               ModalidadeEvento modalidade,
+                               Integer idadeMinima) {
         this.titulo = titulo;
         this.descricao = descricao;
         this.data = data;
@@ -51,6 +57,8 @@ public class EventoCreateRequest {
         this.horaFim = horaFim;
         this.local = local;
         this.capacidadeMaxima = capacidadeMaxima;
+        this.modalidade = modalidade != null ? modalidade : ModalidadeEvento.ABERTO;
+        this.idadeMinima = idadeMinima;
     }
 
     public String getTitulo() {
@@ -107,5 +115,21 @@ public class EventoCreateRequest {
 
     public void setCapacidadeMaxima(int capacidadeMaxima) {
         this.capacidadeMaxima = capacidadeMaxima;
+    }
+
+    public ModalidadeEvento getModalidade() {
+        return modalidade;
+    }
+
+    public void setModalidade(ModalidadeEvento modalidade) {
+        this.modalidade = modalidade;
+    }
+
+    public Integer getIdadeMinima() {
+        return idadeMinima;
+    }
+
+    public void setIdadeMinima(Integer idadeMinima) {
+        this.idadeMinima = idadeMinima;
     }
 }

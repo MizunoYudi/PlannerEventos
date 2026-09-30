@@ -2,6 +2,7 @@ package com.example.plannereventos.dto;
 
 import com.example.plannereventos.model.Evento;
 
+import com.example.plannereventos.model.ModalidadeEvento;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDate;
@@ -22,59 +23,27 @@ public class EventoResponse {
     private String status;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime criadoEm;
+    private ModalidadeEvento modalidade;
+    private Integer idadeMinima;
 
     public EventoResponse() {
     }
 
-    public EventoResponse(Evento evento) {
-        this.id = evento.getId();
-        this.titulo = evento.getTitulo();
-        this.descricao = evento.getDescricao();
-        this.data = evento.getData();
-        this.horaInicio = LocalTime.from(evento.getHoraInicio());
-        this.horaFim = LocalTime.from(evento.getHoraFim());
-        this.local = evento.getLocal();
-        this.capacidadeMaxima = evento.getCapacidadeMaxima();
-        this.status = evento.getStatus();
-        this.criadoEm = evento.getCriadoEm();
-    }
-
-    public EventoResponse(int id,
-                          String titulo,
-                          String descricao,
-                          LocalDate data,
-                          LocalTime horaInicio,
-                          LocalTime horaFim,
-                          String local,
-                          int capacidadeMaxima,
-                          String status,
-                          LocalDateTime criadoEm) {
-        this.id = id;
-        this.titulo = titulo;
-        this.descricao = descricao;
-        this.data = data;
-        this.horaInicio = horaInicio;
-        this.horaFim = horaFim;
-        this.local = local;
-        this.capacidadeMaxima = capacidadeMaxima;
-        this.status = status;
-        this.criadoEm = criadoEm;
-    }
-
-
     public static EventoResponse fromEntity(Evento evento) {
-        return new EventoResponse(
-                evento.getId(),
-                evento.getTitulo(),
-                evento.getDescricao(),
-                evento.getData(),
-                evento.getHoraInicio(),
-                evento.getHoraFim(),
-                evento.getLocal(),
-                evento.getCapacidadeMaxima(),
-                evento.getStatus(),
-                evento.getCriadoEm()
-        );
+        EventoResponse response = new EventoResponse();
+        response.id = evento.getId();
+        response.titulo = evento.getTitulo();
+        response.descricao = evento.getDescricao();
+        response.data = evento.getData();
+        response.horaInicio = evento.getHoraInicio();
+        response.horaFim = evento.getHoraFim();
+        response.local = evento.getLocal();
+        response.capacidadeMaxima = evento.getCapacidadeMaxima();
+        response.status = evento.getStatus();
+        response.criadoEm = evento.getCriadoEm();
+        response.modalidade = evento.getModalidade();
+        response.idadeMinima = evento.getIdadeMinima();
+        return response;
     }
 
     public int getId() {
