@@ -5,7 +5,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 public class Participante {
-
     private UUID id;
     private String nome;
     private String email;

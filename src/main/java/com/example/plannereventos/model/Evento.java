@@ -16,6 +16,8 @@ public class Evento {
     private int capacidadeMaxima;
     private String status;
     private LocalDateTime criadoEm;
+    private ModalidadeEvento modalidade = ModalidadeEvento.ABERTO;
+    private Integer idadeMinima;
 
     @JsonCreator
     public Evento() {
@@ -30,7 +32,9 @@ public class Evento {
                   String local,
                   int capacidadeMaxima,
                   String status,
-                  LocalDateTime criadoEm) {
+                  LocalDateTime criadoEm,
+                  ModalidadeEvento modalidade,
+                  Integer idadeMinima) {
         this.id = id;
         this.titulo = titulo;
         this.descricao = descricao;
@@ -41,6 +45,8 @@ public class Evento {
         this.capacidadeMaxima = capacidadeMaxima;
         this.status = status;
         this.criadoEm = criadoEm;
+        this.modalidade = modalidade != null ? modalidade : ModalidadeEvento.ABERTO;
+        this.idadeMinima = idadeMinima;
     }
 
     public int getId() { return id; }
@@ -111,5 +117,13 @@ public class Evento {
 
     public void setCriadoEm(LocalDateTime criadoEm) {
         this.criadoEm = criadoEm;
+    }
+
+    public ModalidadeEvento getModalidade() {
+        return modalidade;
+    }
+
+    public void setModalidade(ModalidadeEvento modalidade) {
+        this.modalidade = modalidade;
     }
 }
