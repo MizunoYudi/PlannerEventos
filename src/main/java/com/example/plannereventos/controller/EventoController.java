@@ -33,8 +33,11 @@ public class EventoController {
     }
 
     @PatchMapping("/{id}/cancelamento")
-    public ResponseEntity<EventoResponse> cancelar(@PathVariable int id) {
-        EventoResponse response = eventoService.cancelar(id);
+    public ResponseEntity<EventoResponse> cancelar(
+            @PathVariable int id,
+            @RequestBody(required = false) InscricaoCancelarRequest request) {
+        String motivo = (request != null) ? request.getMotivoCancelamento() : null;
+        EventoResponse response = eventoService.cancelar(id, motivo);
         return ResponseEntity.ok(response);
     }
 
