@@ -8,6 +8,7 @@ import com.example.plannereventos.exception.EventoCanceladoException;
 import com.example.plannereventos.exception.EventoJaIniciadoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.model.Evento;
+import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +26,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,18 +42,19 @@ class EventoServiceTest {
     private EventoService eventoService;
 
     private Evento criarEventoPadrao(int id, String status, LocalDate data, LocalTime horaInicio) {
-        return new Evento(
-                id,
-                "Workshop de Clean Code",
-                "Boas práticas em Java",
-                data,
-                horaInicio,
-                horaInicio.plusHours(2),
-                "Auditório Principal",
-                50,
-                status,
-                LocalDateTime.now()
-        );
+        Evento evento = new Evento();
+        evento.setId(id);
+        evento.setTitulo("Workshop de Clean Code");
+        evento.setDescricao("Boas práticas em Java");
+        evento.setData(data);
+        evento.setHoraInicio(horaInicio);
+        evento.setHoraFim(horaInicio.plusHours(2));
+        evento.setLocal("Auditório Principal");
+        evento.setCapacidadeMaxima(50);
+        evento.setModalidade(ModalidadeEvento.ABERTO);
+        evento.setStatus(status);
+        evento.setCriadoEm(LocalDateTime.now());
+        return evento;
     }
 
     @Test
@@ -65,8 +68,8 @@ class EventoServiceTest {
                 LocalTime.of(16, 0),
                 "Auditório Principal",
                 50,
-                "ATIVO",
-                LocalDateTime.now()
+                ModalidadeEvento.ABERTO,
+                null
         );
 
         when(eventoRepository.salvar(any(Evento.class))).thenAnswer(invocation -> {
@@ -118,6 +121,7 @@ class EventoServiceTest {
         updateRequest.setHoraFim(LocalTime.of(13, 0));
         updateRequest.setLocal("Sala B");
         updateRequest.setCapacidadeMaxima(60);
+        updateRequest.setModalidade(ModalidadeEvento.ABERTO);
 
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoExistente));
         when(eventoRepository.salvar(any(Evento.class))).thenReturn(eventoExistente);
@@ -146,17 +150,20 @@ class EventoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve cancelar evento ativo futuro com sucesso")
+    @DisplayName("Deve cancelar evento ativo futuro com sucesso e cancelar as inscricoes")
     void deveCancelarEventoComSucesso() {
         Evento eventoAtivo = criarEventoPadrao(1, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(15, 0));
+        String motivo = "Problemas técnicos no local";
+
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoAtivo));
         when(eventoRepository.salvar(any(Evento.class))).thenReturn(eventoAtivo);
 
-        EventoResponse response = eventoService.cancelar(1);
+        EventoResponse response = eventoService.cancelar(1, motivo);
 
         assertNotNull(response);
         assertEquals("CANCELADO", response.getStatus());
         verify(eventoRepository, times(1)).salvar(eventoAtivo);
+        verify(inscricaoRepository, times(1)).cancelarTodasPorEvento(eq(1), eq(motivo));
     }
 
     @Test
@@ -166,7 +173,7 @@ class EventoServiceTest {
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoJaCancelado));
 
         assertThrows(EventoCanceladoException.class, () -> {
-            eventoService.cancelar(1);
+            eventoService.cancelar(1, "Motivo");
         });
 
         verify(eventoRepository, never()).salvar(any());
@@ -179,7 +186,7 @@ class EventoServiceTest {
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPassado));
 
         assertThrows(EventoJaIniciadoException.class, () -> {
-            eventoService.cancelar(1);
+            eventoService.cancelar(1, "Motivo");
         });
 
         verify(eventoRepository, never()).salvar(any());

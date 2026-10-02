@@ -1,5 +1,6 @@
 package com.example.plannereventos.controller;
 
+import com.example.plannereventos.dto.InscricaoCancelarRequest;
 import com.example.plannereventos.dto.InscricaoCreateRequest;
 import com.example.plannereventos.dto.InscricaoResponse;
 import com.example.plannereventos.service.InscricaoService;
@@ -41,11 +42,12 @@ public class InscricaoController {
         return ResponseEntity.ok(inscricaoService.buscarPorEventoEParticipante(eventoId, participanteId));
     }
 
-    @DeleteMapping("/{participanteId}")
+    @PatchMapping("/{participanteId}")
     public ResponseEntity<Void> cancelarInscricao(
             @PathVariable int eventoId,
-            @PathVariable UUID participanteId) {
-        inscricaoService.cancelarInscricao(eventoId, participanteId);
+            @PathVariable UUID participanteId,
+            @Valid @RequestBody InscricaoCancelarRequest request) {
+        inscricaoService.cancelarInscricao(eventoId, participanteId, request);
         return ResponseEntity.noContent().build();
     }
 }
