@@ -18,9 +18,9 @@ public class GlobalExceptionHandler {
             EventoCanceladoException.class,
             EventoJaIniciadoException.class,
             CancelamentoInscricaoInvalidoException.class,
-            ParticipanteSemMatriculaAtivaException.class,
+            MatriculaInvalidaException.class,
             DataNascimentoObrigatoriaException.class,
-            IdadeInsuficienteException.class
+            IdadeNaoPermitidaException.class
     })
     public ResponseEntity<String> handleRegraDeNegocio(Exception ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
