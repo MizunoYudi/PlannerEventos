@@ -11,10 +11,13 @@ import com.example.plannereventos.model.Participante;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
+import com.example.plannereventos.strategy.EventoAbertoStrategy;
+import com.example.plannereventos.strategy.EventoExclusivoAlunosStrategy;
+import com.example.plannereventos.strategy.EventoRestricaoIdadeStrategy;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -41,8 +44,23 @@ class InscricaoServiceTest {
     @Mock
     private ParticipanteRepository participanteRepository;
 
-    @InjectMocks
     private InscricaoService inscricaoService;
+
+    @BeforeEach
+    void setUp() {
+        var estrategias = List.of(
+                new EventoAbertoStrategy(inscricaoRepository),
+                new EventoExclusivoAlunosStrategy(),
+                new EventoRestricaoIdadeStrategy()
+        );
+
+        inscricaoService = new InscricaoService(
+                inscricaoRepository,
+                eventoRepository,
+                participanteRepository,
+                estrategias
+        );
+    }
 
     private Evento criarEventoValido(int id, String status, LocalDate data, LocalTime horaInicio, int capacidade) {
         Evento evento = new Evento();
@@ -101,7 +119,7 @@ class InscricaoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve lancar excecao ao tentar inscrever em evento EXCLUSIVO_ALUNOS com participante sem matricula ativa")
+    @DisplayName("Deve lancar MatriculaInvalidaException ao tentar inscrever em evento EXCLUSIVO_ALUNOS com participante sem matricula ativa")
     void deveLancarExcecaoQuandoAlunoNaoForElegivel() {
         int eventoId = 1;
         UUID participanteId = UUID.randomUUID();
@@ -116,7 +134,7 @@ class InscricaoServiceTest {
         when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participanteInvalido));
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(MatriculaInvalidaException.class, () -> {
             inscricaoService.inscrever(eventoId, request);
         });
 
@@ -124,7 +142,7 @@ class InscricaoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve lancar excecao ao tentar inscrever em evento RESTRICAO_IDADE com participante menor que a idade minima")
+    @DisplayName("Deve lancar IdadeNaoPermitidaException ao tentar inscrever em evento RESTRICAO_IDADE com participante menor que a idade minima")
     void deveLancarExcecaoQuandoIdadeForInsuficiente() {
         int eventoId = 1;
         UUID participanteId = UUID.randomUUID();
@@ -140,7 +158,7 @@ class InscricaoServiceTest {
         when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participanteMenor));
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(IdadeNaoPermitidaException.class, () -> {
             inscricaoService.inscrever(eventoId, request);
         });
 
@@ -240,11 +258,13 @@ class InscricaoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve lancar EventoSemVagasException quando a capacidade maxima for atingida")
+    @DisplayName("Deve lancar EventoSemVagasException quando a capacidade maxima for atingida em evento ABERTO")
     void deveLancarExcecaoQuandoEventoEstiverLotado() {
         int eventoId = 1;
         UUID participanteId = UUID.randomUUID();
         Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(3), LocalTime.of(10, 0), 5);
+        evento.setModalidade(ModalidadeEvento.ABERTO);
+
         Participante participante = criarParticipanteValido(participanteId);
         InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
 
