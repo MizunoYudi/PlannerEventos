@@ -42,7 +42,7 @@ public class InscricaoController {
         return ResponseEntity.ok(inscricaoService.buscarPorEventoEParticipante(eventoId, participanteId));
     }
 
-    @DeleteMapping("/{participanteId}")
+    @PatchMapping("/{participanteId}")
     public ResponseEntity<Void> cancelarInscricao(
             @PathVariable int eventoId,
             @PathVariable UUID participanteId,

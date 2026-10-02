@@ -17,10 +17,13 @@ public class GlobalExceptionHandler {
             EventoSemVagasException.class,
             EventoCanceladoException.class,
             EventoJaIniciadoException.class,
-            CancelamentoInscricaoInvalidoException.class
+            CancelamentoInscricaoInvalidoException.class,
+            ParticipanteSemMatriculaAtivaException.class,
+            DataNascimentoObrigatoriaException.class,
+            IdadeInsuficienteException.class
     })
     public ResponseEntity<String> handleRegraDeNegocio(Exception ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 
     @ExceptionHandler({

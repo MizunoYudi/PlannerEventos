@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -35,13 +36,22 @@ class ParticipanteServiceTest {
     @Test
     @DisplayName("Deve cadastrar participante com sucesso quando o e-mail não estiver em uso")
     void deveCadastrarParticipanteComSucesso() {
-        ParticipanteCreateRequest request = new ParticipanteCreateRequest("Maria Silva", "maria@email.com");
-        Participante participanteSalvo = new Participante(
-                UUID.randomUUID(),
+        ParticipanteCreateRequest request = new ParticipanteCreateRequest(
                 "Maria Silva",
                 "maria@email.com",
-                LocalDateTime.now()
+                "2023101",
+                true,
+                LocalDate.of(2000, 5, 15)
         );
+
+        Participante participanteSalvo = new Participante();
+        participanteSalvo.setId(UUID.randomUUID());
+        participanteSalvo.setNome("Maria Silva");
+        participanteSalvo.setEmail("maria@email.com");
+        participanteSalvo.setMatricula("2023101");
+        participanteSalvo.setMatriculaAtiva(true);
+        participanteSalvo.setDataNascimento(LocalDate.of(2000, 5, 15));
+        participanteSalvo.setCriadoEm(LocalDateTime.now());
 
         when(participanteRepository.existePorEmail("maria@email.com")).thenReturn(false);
         when(participanteRepository.salvar(any(Participante.class))).thenReturn(participanteSalvo);
@@ -57,7 +67,13 @@ class ParticipanteServiceTest {
     @Test
     @DisplayName("Deve lançar EmailJaCadastradoException ao tentar cadastrar e-mail duplicado")
     void deveLancarExcecaoQuandoEmailJaCadastradoNoCadastro() {
-        ParticipanteCreateRequest request = new ParticipanteCreateRequest("João Silva", "joao@email.com");
+        ParticipanteCreateRequest request = new ParticipanteCreateRequest(
+                "João Silva",
+                "joao@email.com",
+                "2023102",
+                true,
+                LocalDate.of(1998, 10, 10)
+        );
         when(participanteRepository.existePorEmail("joao@email.com")).thenReturn(true);
 
         assertThrows(EmailJaCadastradoException.class, () -> {
@@ -71,7 +87,12 @@ class ParticipanteServiceTest {
     @DisplayName("Deve retornar participante quando o ID existir")
     void deveBuscarPorIdComSucesso() {
         UUID id = UUID.randomUUID();
-        Participante participante = new Participante(id, "Ana Souza", "ana@email.com", LocalDateTime.now());
+        Participante participante = new Participante();
+        participante.setId(id);
+        participante.setNome("Ana Souza");
+        participante.setEmail("ana@email.com");
+        participante.setCriadoEm(LocalDateTime.now());
+
         when(participanteRepository.buscarPorId(id)).thenReturn(Optional.of(participante));
 
         ParticipanteResponse resultado = participanteService.buscarPorId(id);
@@ -96,8 +117,19 @@ class ParticipanteServiceTest {
     @DisplayName("Deve atualizar os dados do participante com sucesso")
     void deveAtualizarParticipanteComSucesso() {
         UUID id = UUID.randomUUID();
-        Participante participanteExistente = new Participante(id, "Lucas Lima", "lucas@email.com", LocalDateTime.now());
-        ParticipanteUpdateRequest request = new ParticipanteUpdateRequest("Lucas Silva", "lucas.silva@email.com");
+        Participante participanteExistente = new Participante();
+        participanteExistente.setId(id);
+        participanteExistente.setNome("Lucas Lima");
+        participanteExistente.setEmail("lucas@email.com");
+        participanteExistente.setCriadoEm(LocalDateTime.now());
+
+        ParticipanteUpdateRequest request = new ParticipanteUpdateRequest(
+                "Lucas Silva",
+                "lucas.silva@email.com",
+                "2023103",
+                true,
+                LocalDate.of(1995, 3, 20)
+        );
 
         when(participanteRepository.buscarPorId(id)).thenReturn(Optional.of(participanteExistente));
         when(participanteRepository.existePorEmail("lucas.silva@email.com")).thenReturn(false);
@@ -113,11 +145,17 @@ class ParticipanteServiceTest {
     @Test
     @DisplayName("Deve listar todos os participantes cadastrados")
     void deveListarTodosOsParticipantes() {
-        List<Participante> participantes = List.of(
-                new Participante(UUID.randomUUID(), "P1", "p1@email.com", LocalDateTime.now()),
-                new Participante(UUID.randomUUID(), "P2", "p2@email.com", LocalDateTime.now())
-        );
-        when(participanteRepository.listar()).thenReturn(participantes);
+        Participante p1 = new Participante();
+        p1.setId(UUID.randomUUID());
+        p1.setNome("P1");
+        p1.setEmail("p1@email.com");
+
+        Participante p2 = new Participante();
+        p2.setId(UUID.randomUUID());
+        p2.setNome("P2");
+        p2.setEmail("p2@email.com");
+
+        when(participanteRepository.listar()).thenReturn(List.of(p1, p2));
 
         List<ParticipanteResponse> resultado = participanteService.listar();
 

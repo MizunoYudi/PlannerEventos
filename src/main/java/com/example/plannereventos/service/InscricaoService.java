@@ -118,16 +118,16 @@ public class InscricaoService {
         if (evento.getModalidade() == ModalidadeEvento.EXCLUSIVO_ALUNOS) {
             if (participante.getMatricula() == null || participante.getMatricula().isBlank()
                     || !Boolean.TRUE.equals(participante.getMatriculaAtiva())) {
-                throw new IllegalArgumentException("Inscrição permitida apenas para alunos com matrícula ativa.");
+                throw new ParticipanteSemMatriculaAtivaException();
             }
         } else if (evento.getModalidade() == ModalidadeEvento.RESTRICAO_IDADE) {
             if (evento.getIdadeMinima() != null && evento.getIdadeMinima() > 0) {
                 if (participante.getDataNascimento() == null) {
-                    throw new IllegalArgumentException("A data de nascimento do participante é obrigatória para este evento.");
+                    throw new DataNascimentoObrigatoriaException();
                 }
                 int idadeNoEvento = Period.between(participante.getDataNascimento(), evento.getData()).getYears();
                 if (idadeNoEvento < evento.getIdadeMinima()) {
-                    throw new IllegalArgumentException("O participante não possui a idade mínima exigida de " + evento.getIdadeMinima() + " anos.");
+                    throw new IdadeInsuficienteException(evento.getIdadeMinima());
                 }
             }
         }
