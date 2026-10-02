@@ -11,13 +11,15 @@ import com.example.plannereventos.model.Participante;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
+import com.example.plannereventos.strategy.ElegibilidadeStrategy;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class InscricaoService {
@@ -28,13 +30,17 @@ public class InscricaoService {
     private final InscricaoRepository inscricaoRepository;
     private final EventoRepository eventoRepository;
     private final ParticipanteRepository participanteRepository;
+    private final Map<ModalidadeEvento, ElegibilidadeStrategy> estrategias;
 
     public InscricaoService(InscricaoRepository inscricaoRepository,
                             EventoRepository eventoRepository,
-                            ParticipanteRepository participanteRepository) {
+                            ParticipanteRepository participanteRepository,
+                            List<ElegibilidadeStrategy> listaEstrategias) {
         this.inscricaoRepository = inscricaoRepository;
         this.eventoRepository = eventoRepository;
         this.participanteRepository = participanteRepository;
+        this.estrategias = listaEstrategias.stream()
+                .collect(Collectors.toMap(ElegibilidadeStrategy::getModalidade, Function.identity()));
     }
 
     public List<InscricaoResponse> listarPorEvento(int eventoId) {
@@ -77,15 +83,13 @@ public class InscricaoService {
             throw new EventoJaIniciadoException(eventoId);
         }
 
-        validarElegibilidadeModalidade(evento, participante);
-
         if (inscricaoRepository.existeConfirmada(eventoId, participanteId)) {
             throw new InscricaoDuplicadaException(eventoId, participanteId);
         }
 
-        int inscricoesConfirmadas = inscricaoRepository.contarConfirmadasPorEvento(eventoId);
-        if (inscricoesConfirmadas >= evento.getCapacidadeMaxima()) {
-            throw new EventoSemVagasException(eventoId);
+        ElegibilidadeStrategy strategy = estrategias.get(evento.getModalidade());
+        if (strategy != null) {
+            strategy.validarElegibilidade(evento, participante);
         }
 
         Inscricao novaInscricao = new Inscricao();
@@ -112,25 +116,6 @@ public class InscricaoService {
         inscricao.setStatus(STATUS_CANCELADA);
         inscricao.setMotivoCancelamento(request != null ? request.getMotivoCancelamento() : null);
         inscricaoRepository.salvar(inscricao);
-    }
-
-    private void validarElegibilidadeModalidade(Evento evento, Participante participante) {
-        if (evento.getModalidade() == ModalidadeEvento.EXCLUSIVO_ALUNOS) {
-            if (participante.getMatricula() == null || participante.getMatricula().isBlank()
-                    || !Boolean.TRUE.equals(participante.getMatriculaAtiva())) {
-                throw new ParticipanteSemMatriculaAtivaException();
-            }
-        } else if (evento.getModalidade() == ModalidadeEvento.RESTRICAO_IDADE) {
-            if (evento.getIdadeMinima() != null && evento.getIdadeMinima() > 0) {
-                if (participante.getDataNascimento() == null) {
-                    throw new DataNascimentoObrigatoriaException();
-                }
-                int idadeNoEvento = Period.between(participante.getDataNascimento(), evento.getData()).getYears();
-                if (idadeNoEvento < evento.getIdadeMinima()) {
-                    throw new IdadeInsuficienteException(evento.getIdadeMinima());
-                }
-            }
-        }
     }
 
     private Evento buscarEventoOuFalhar(int eventoId) {
