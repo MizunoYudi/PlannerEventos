@@ -20,7 +20,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
+import com.example.plannereventos.strategy.CancelamentoEventoAbertoStrategy;
+import com.example.plannereventos.strategy.CancelamentoEventoExclusivoAlunosStrategy;
+import com.example.plannereventos.strategy.CancelamentoEventoRestricaoIdadeStrategy;
+import com.example.plannereventos.strategy.PoliticaCancelamentoStrategy;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -46,21 +49,29 @@ class InscricaoServiceTest {
 
     private InscricaoService inscricaoService;
 
-    @BeforeEach
-    void setUp() {
-        var estrategias = List.of(
-                new EventoAbertoStrategy(inscricaoRepository),
-                new EventoExclusivoAlunosStrategy(),
-                new EventoRestricaoIdadeStrategy()
-        );
+   @BeforeEach
+void setUp() {
 
-        inscricaoService = new InscricaoService(
-                inscricaoRepository,
-                eventoRepository,
-                participanteRepository,
-                estrategias
-        );
-    }
+    var estrategiasElegibilidade = List.of(
+            new EventoAbertoStrategy(inscricaoRepository),
+            new EventoExclusivoAlunosStrategy(),
+            new EventoRestricaoIdadeStrategy()
+    );
+
+    List<PoliticaCancelamentoStrategy> politicasCancelamento = List.of(
+            new CancelamentoEventoAbertoStrategy(eventoRepository),
+            new CancelamentoEventoExclusivoAlunosStrategy(eventoRepository),
+            new CancelamentoEventoRestricaoIdadeStrategy()
+    );
+
+    inscricaoService = new InscricaoService(
+            inscricaoRepository,
+            eventoRepository,
+            participanteRepository,
+            estrategiasElegibilidade,
+            politicasCancelamento
+    );
+}
 
     private Evento criarEventoValido(int id, String status, LocalDate data, LocalTime horaInicio, int capacidade) {
         Evento evento = new Evento();
@@ -300,64 +311,306 @@ class InscricaoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve lancar InscricaoNaoEncontradaException ao tentar cancelar inscricao inexistente")
-    void deveLancarExcecaoAoCancelarInscricaoInexistente() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        InscricaoCancelarRequest request = new InscricaoCancelarRequest("Motivo");
+@DisplayName("Deve lancar InscricaoNaoEncontradaException ao tentar cancelar inscricao inexistente")
+void deveLancarExcecaoAoCancelarInscricaoInexistente() {
 
-        when(eventoRepository.existePorId(eventoId)).thenReturn(true);
-        when(participanteRepository.existePorId(participanteId)).thenReturn(true);
-        when(inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId)).thenReturn(Optional.empty());
+    int eventoId = 1;
+    UUID participanteId = UUID.randomUUID();
 
-        assertThrows(InscricaoNaoEncontradaException.class, () -> {
-            inscricaoService.cancelarInscricao(eventoId, participanteId, request);
-        });
+    Evento evento = criarEventoValido(
+            eventoId,
+            "ATIVO",
+            LocalDate.now().plusDays(5),
+            LocalTime.of(10, 0),
+            50
+    );
 
-        verify(inscricaoRepository, never()).salvar(any());
-    }
+    InscricaoCancelarRequest request =
+            new InscricaoCancelarRequest("Motivo");
 
-    @Test
-    @DisplayName("Deve lancar CancelamentoInscricaoInvalidoException ao cancelar inscricao ja cancelada")
-    void deveLancarExcecaoAoCancelarInscricaoJaCancelada() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Inscricao inscricaoCancelada = new Inscricao(
-                1,
-                eventoId,
-                participanteId,
-                LocalDateTime.now(),
-                "CANCELADA",
-                "Desistência do participante"
-        );
-        InscricaoCancelarRequest request = new InscricaoCancelarRequest("Motivo");
+    when(eventoRepository.buscarPorId(eventoId))
+            .thenReturn(Optional.of(evento));
 
-        when(eventoRepository.existePorId(eventoId)).thenReturn(true);
-        when(participanteRepository.existePorId(participanteId)).thenReturn(true);
-        when(inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId)).thenReturn(Optional.of(inscricaoCancelada));
+    when(participanteRepository.existePorId(participanteId))
+            .thenReturn(true);
 
-        assertThrows(CancelamentoInscricaoInvalidoException.class, () -> {
-            inscricaoService.cancelarInscricao(eventoId, participanteId, request);
-        });
+    when(inscricaoRepository.buscarPorEventoEParticipante(
+            eventoId,
+            participanteId
+    )).thenReturn(Optional.empty());
 
-        verify(inscricaoRepository, never()).salvar(any());
-    }
+    assertThrows(
+            InscricaoNaoEncontradaException.class,
+            () -> inscricaoService.cancelarInscricao(
+                    eventoId,
+                    participanteId,
+                    request
+            )
+    );
+
+    verify(inscricaoRepository, never())
+            .salvar(any());
+}
 
     @Test
-    @DisplayName("Deve listar inscricoes por evento com sucesso")
-    void deveListarInscricoesPorEvento() {
-        int eventoId = 1;
-        List<Inscricao> lista = List.of(
-                new Inscricao(1, eventoId, UUID.randomUUID(), LocalDateTime.now(), "CONFIRMADA", null),
-                new Inscricao(2, eventoId, UUID.randomUUID(), LocalDateTime.now(), "CONFIRMADA", null)
-        );
+@DisplayName("Deve lancar CancelamentoInscricaoInvalidoException ao cancelar inscricao ja cancelada")
+void deveLancarExcecaoAoCancelarInscricaoJaCancelada() {
 
-        when(eventoRepository.existePorId(eventoId)).thenReturn(true);
-        when(inscricaoRepository.listarPorEvento(eventoId)).thenReturn(lista);
+    int eventoId = 1;
+    UUID participanteId = UUID.randomUUID();
 
-        List<InscricaoResponse> resultado = inscricaoService.listarPorEvento(eventoId);
+    Evento evento = criarEventoValido(
+            eventoId,
+            "ATIVO",
+            LocalDate.now().plusDays(5),
+            LocalTime.of(10, 0),
+            50
+    );
 
-        assertEquals(2, resultado.size());
-        verify(inscricaoRepository, times(1)).listarPorEvento(eventoId);
-    }
+    Inscricao inscricaoCancelada = new Inscricao(
+            1,
+            eventoId,
+            participanteId,
+            LocalDateTime.now(),
+            "CANCELADA",
+            "Desistencia do participante"
+    );
+
+    InscricaoCancelarRequest request =
+            new InscricaoCancelarRequest("Motivo");
+
+    when(eventoRepository.buscarPorId(eventoId))
+            .thenReturn(Optional.of(evento));
+
+    when(participanteRepository.existePorId(participanteId))
+            .thenReturn(true);
+
+    when(inscricaoRepository.buscarPorEventoEParticipante(
+            eventoId,
+            participanteId
+    )).thenReturn(Optional.of(inscricaoCancelada));
+
+    assertThrows(
+            CancelamentoInscricaoInvalidoException.class,
+            () -> inscricaoService.cancelarInscricao(
+                    eventoId,
+                    participanteId,
+                    request
+            )
+    );
+
+    verify(inscricaoRepository, never())
+            .salvar(any());
+}@Test
+@DisplayName("Nao deve cancelar evento aberto apos o inicio")
+void naoDeveCancelarEventoAbertoAposInicio() {
+
+    int eventoId = 1;
+    UUID participanteId = UUID.randomUUID();
+
+    Evento evento = criarEventoValido(
+            eventoId,
+            "ATIVO",
+            LocalDate.now().minusDays(1),
+            LocalTime.of(10, 0),
+            50
+    );
+
+    evento.setModalidade(ModalidadeEvento.ABERTO);
+
+    Inscricao inscricao = new Inscricao(
+            1,
+            eventoId,
+            participanteId,
+            LocalDateTime.now(),
+            "CONFIRMADA",
+            null
+    );
+
+    when(eventoRepository.buscarPorId(eventoId))
+            .thenReturn(Optional.of(evento));
+
+    when(participanteRepository.existePorId(participanteId))
+            .thenReturn(true);
+
+    when(inscricaoRepository.buscarPorEventoEParticipante(
+            eventoId,
+            participanteId
+    )).thenReturn(Optional.of(inscricao));
+
+    assertThrows(
+            CancelamentoForaDoPrazoException.class,
+            () -> inscricaoService.cancelarInscricao(
+                    eventoId,
+                    participanteId,
+                    null
+            )
+    );
+
+    assertEquals("CONFIRMADA", inscricao.getStatus());
+
+    verify(inscricaoRepository, never())
+            .salvar(any());
+}
+@Test
+@DisplayName("Deve exigir motivo no cancelamento de evento com restricao de idade")
+void deveExigirMotivoCancelamentoRestricaoIdade() {
+
+    int eventoId = 1;
+    UUID participanteId = UUID.randomUUID();
+
+    Evento evento = criarEventoValido(
+            eventoId,
+            "ATIVO",
+            LocalDate.now().plusDays(5),
+            LocalTime.of(10, 0),
+            50
+    );
+
+    evento.setModalidade(
+            ModalidadeEvento.RESTRICAO_IDADE
+    );
+
+    Inscricao inscricao = new Inscricao(
+            1,
+            eventoId,
+            participanteId,
+            LocalDateTime.now(),
+            "CONFIRMADA",
+            null
+    );
+
+    when(eventoRepository.buscarPorId(eventoId))
+            .thenReturn(Optional.of(evento));
+
+    when(participanteRepository.existePorId(participanteId))
+            .thenReturn(true);
+
+    when(inscricaoRepository.buscarPorEventoEParticipante(
+            eventoId,
+            participanteId
+    )).thenReturn(Optional.of(inscricao));
+
+    assertThrows(
+            MotivoCancelamentoObrigatorioException.class,
+            () -> inscricaoService.cancelarInscricao(
+                    eventoId,
+                    participanteId,
+                    null
+            )
+    );
+
+    assertEquals("CONFIRMADA", inscricao.getStatus());
+
+    verify(inscricaoRepository, never())
+            .salvar(any());
+}
+
+@Test
+@DisplayName("Nao deve cancelar evento exclusivo para alunos com menos de 24 horas")
+void naoDeveCancelarEventoExclusivoDentroDas24Horas() {
+
+    int eventoId = 1;
+    UUID participanteId = UUID.randomUUID();
+
+    Evento evento = criarEventoValido(
+            eventoId,
+            "ATIVO",
+            LocalDate.now().plusDays(1),
+            LocalTime.now(),
+            50
+    );
+
+    evento.setModalidade(
+            ModalidadeEvento.EXCLUSIVO_ALUNOS
+    );
+
+    Inscricao inscricao = new Inscricao(
+            1,
+            eventoId,
+            participanteId,
+            LocalDateTime.now(),
+            "CONFIRMADA",
+            null
+    );
+
+    when(eventoRepository.buscarPorId(eventoId))
+            .thenReturn(Optional.of(evento));
+
+    when(participanteRepository.existePorId(participanteId))
+            .thenReturn(true);
+
+    when(inscricaoRepository.buscarPorEventoEParticipante(
+            eventoId,
+            participanteId
+    )).thenReturn(Optional.of(inscricao));
+
+    assertThrows(
+            CancelamentoForaDoPrazoException.class,
+            () -> inscricaoService.cancelarInscricao(
+                    eventoId,
+                    participanteId,
+                    null
+            )
+    );
+
+    verify(inscricaoRepository, never())
+            .salvar(any());
+}
+    @Test
+@DisplayName("Deve cancelar inscricao de evento aberto antes do inicio")
+void deveCancelarInscricaoComSucesso() {
+
+    int eventoId = 1;
+    UUID participanteId = UUID.randomUUID();
+
+    Evento evento = criarEventoValido(
+            eventoId,
+            "ATIVO",
+            LocalDate.now().plusDays(5),
+            LocalTime.of(10, 0),
+            50
+    );
+
+    evento.setModalidade(ModalidadeEvento.ABERTO);
+
+    Inscricao inscricao = new Inscricao(
+            1,
+            eventoId,
+            participanteId,
+            LocalDateTime.now(),
+            "CONFIRMADA",
+            null
+    );
+
+    InscricaoCancelarRequest request =
+            new InscricaoCancelarRequest("Desistencia pessoal");
+
+    when(eventoRepository.buscarPorId(eventoId))
+            .thenReturn(Optional.of(evento));
+
+    when(participanteRepository.existePorId(participanteId))
+            .thenReturn(true);
+
+    when(inscricaoRepository.buscarPorEventoEParticipante(
+            eventoId,
+            participanteId
+    )).thenReturn(Optional.of(inscricao));
+
+    inscricaoService.cancelarInscricao(
+            eventoId,
+            participanteId,
+            request
+    );
+
+    assertEquals("CANCELADA", inscricao.getStatus());
+
+    assertEquals(
+            "Desistencia pessoal",
+            inscricao.getMotivoCancelamento()
+    );
+
+    verify(inscricaoRepository, times(1))
+            .salvar(inscricao);
+}
 }

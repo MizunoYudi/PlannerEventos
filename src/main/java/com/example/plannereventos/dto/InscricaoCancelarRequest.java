@@ -1,12 +1,13 @@
 package com.example.plannereventos.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public class InscricaoCancelarRequest {
 
-    @NotBlank(message = "O motivo do cancelamento e obrigatorio")
-    @Size(max = 255, message = "O motivo deve ter no maximo 255 caracteres")
+    @Size(
+        max = 255,
+        message = "O motivo deve ter no maximo 255 caracteres"
+    )
     private String motivoCancelamento;
 
     public InscricaoCancelarRequest() {

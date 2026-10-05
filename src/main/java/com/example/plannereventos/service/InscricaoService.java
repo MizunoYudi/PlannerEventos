@@ -12,6 +12,8 @@ import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
 import com.example.plannereventos.strategy.ElegibilidadeStrategy;
+import com.example.plannereventos.strategy.PoliticaCancelamentoStrategy;
+
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -30,17 +32,30 @@ public class InscricaoService {
     private final InscricaoRepository inscricaoRepository;
     private final EventoRepository eventoRepository;
     private final ParticipanteRepository participanteRepository;
-    private final Map<ModalidadeEvento, ElegibilidadeStrategy> estrategias;
+    private final Map<ModalidadeEvento, ElegibilidadeStrategy> estrategiasElegibilidade;
 
-    public InscricaoService(InscricaoRepository inscricaoRepository,
-                            EventoRepository eventoRepository,
-                            ParticipanteRepository participanteRepository,
-                            List<ElegibilidadeStrategy> listaEstrategias) {
+    private final Map<ModalidadeEvento, PoliticaCancelamentoStrategy> politicasCancelamento;
+
+    public InscricaoService(
+            InscricaoRepository inscricaoRepository,
+            EventoRepository eventoRepository,
+            ParticipanteRepository participanteRepository,
+            List<ElegibilidadeStrategy> listaEstrategias,
+            List<PoliticaCancelamentoStrategy> listaPoliticasCancelamento) {
+
         this.inscricaoRepository = inscricaoRepository;
         this.eventoRepository = eventoRepository;
         this.participanteRepository = participanteRepository;
-        this.estrategias = listaEstrategias.stream()
-                .collect(Collectors.toMap(ElegibilidadeStrategy::getModalidade, Function.identity()));
+
+        this.estrategiasElegibilidade = listaEstrategias.stream()
+                .collect(Collectors.toMap(
+                        ElegibilidadeStrategy::getModalidade,
+                        Function.identity()));
+
+        this.politicasCancelamento = listaPoliticasCancelamento.stream()
+                .collect(Collectors.toMap(
+                        PoliticaCancelamentoStrategy::getModalidade,
+                        Function.identity()));
     }
 
     public List<InscricaoResponse> listarPorEvento(int eventoId) {
@@ -87,9 +102,13 @@ public class InscricaoService {
             throw new InscricaoDuplicadaException(eventoId, participanteId);
         }
 
-        ElegibilidadeStrategy strategy = estrategias.get(evento.getModalidade());
+        ElegibilidadeStrategy strategy = estrategiasElegibilidade.get(
+                evento.getModalidade());
+
         if (strategy != null) {
-            strategy.validarElegibilidade(evento, participante);
+            strategy.validarElegibilidade(
+                    evento,
+                    participante);
         }
 
         Inscricao novaInscricao = new Inscricao();
@@ -102,19 +121,53 @@ public class InscricaoService {
         return new InscricaoResponse(inscricaoSalva);
     }
 
-    public void cancelarInscricao(int eventoId, UUID participanteId, InscricaoCancelarRequest request) {
-        validarExistenciaEvento(eventoId);
+    public void cancelarInscricao(
+            int eventoId,
+            UUID participanteId,
+            InscricaoCancelarRequest request) {
+
+        Evento evento = buscarEventoOuFalhar(eventoId);
+
         validarExistenciaParticipante(participanteId);
 
-        Inscricao inscricao = inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId)
-                .orElseThrow(() -> new InscricaoNaoEncontradaException(eventoId, participanteId));
+        Inscricao inscricao = inscricaoRepository
+                .buscarPorEventoEParticipante(
+                        eventoId,
+                        participanteId)
+                .orElseThrow(() -> new InscricaoNaoEncontradaException(
+                        eventoId,
+                        participanteId));
 
-        if (!STATUS_CONFIRMADA.equalsIgnoreCase(inscricao.getStatus())) {
+        if (!STATUS_CONFIRMADA.equalsIgnoreCase(
+                inscricao.getStatus())) {
+
             throw new CancelamentoInscricaoInvalidoException();
         }
 
+        String motivo = request != null
+                ? request.getMotivoCancelamento()
+                : null;
+
+        PoliticaCancelamentoStrategy politica = politicasCancelamento.get(
+                evento.getModalidade());
+
+        if (politica == null) {
+            throw new IllegalStateException(
+                    "Politica de cancelamento nao encontrada para: "
+                            + evento.getModalidade());
+        }
+
+        politica.validarCancelamento(
+                inscricao,
+                motivo);
+
         inscricao.setStatus(STATUS_CANCELADA);
-        inscricao.setMotivoCancelamento(request != null ? request.getMotivoCancelamento() : null);
+
+        inscricao.setMotivoCancelamento(
+                motivo != null && !motivo.isBlank()
+                        ? motivo.trim()
+                        : null);
+
         inscricaoRepository.salvar(inscricao);
     }
 
