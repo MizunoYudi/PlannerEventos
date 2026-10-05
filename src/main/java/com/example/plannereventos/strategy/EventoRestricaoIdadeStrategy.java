@@ -1,13 +1,14 @@
 package com.example.plannereventos.strategy;
 
+import java.time.Period;
+
+import org.springframework.stereotype.Component;
+
 import com.example.plannereventos.exception.DataNascimentoObrigatoriaException;
 import com.example.plannereventos.exception.IdadeNaoPermitidaException;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.model.Participante;
-import org.springframework.stereotype.Component;
-
-import java.time.Period;
 
 @Component
 public class EventoRestricaoIdadeStrategy implements ElegibilidadeStrategy {
