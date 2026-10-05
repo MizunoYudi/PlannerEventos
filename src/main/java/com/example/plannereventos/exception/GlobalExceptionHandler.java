@@ -20,10 +20,15 @@ public class GlobalExceptionHandler {
             CancelamentoInscricaoInvalidoException.class,
             MatriculaInvalidaException.class,
             DataNascimentoObrigatoriaException.class,
-            IdadeNaoPermitidaException.class
+            IdadeNaoPermitidaException.class,
+            CancelamentoForaDoPrazoException.class,
+            MotivoCancelamentoObrigatorioException.class
     })
     public ResponseEntity<String> handleRegraDeNegocio(Exception ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ex.getMessage());
     }
 
     @ExceptionHandler({
@@ -32,17 +37,26 @@ public class GlobalExceptionHandler {
             InscricaoNaoEncontradaException.class
     })
     public ResponseEntity<String> handleRecursoNaoEncontrado(Exception ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidacao(MethodArgumentNotValidException ex) {
+    public ResponseEntity<String> handleValidacao(
+            MethodArgumentNotValidException ex) {
+
         String erros = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .map(error ->
+                        error.getField() + ": " + error.getDefaultMessage()
+                )
                 .collect(Collectors.joining("; "));
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erros);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(erros);
     }
 }

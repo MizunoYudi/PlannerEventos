@@ -46,8 +46,13 @@ public class InscricaoController {
     public ResponseEntity<Void> cancelarInscricao(
             @PathVariable int eventoId,
             @PathVariable UUID participanteId,
-            @Valid @RequestBody InscricaoCancelarRequest request) {
-        inscricaoService.cancelarInscricao(eventoId, participanteId, request);
+            @Valid @RequestBody(required = false) InscricaoCancelarRequest request) {
+
+        inscricaoService.cancelarInscricao(
+                eventoId,
+                participanteId,
+                request);
+
         return ResponseEntity.noContent().build();
     }
 }
