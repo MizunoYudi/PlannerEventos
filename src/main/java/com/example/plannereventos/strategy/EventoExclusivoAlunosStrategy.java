@@ -1,10 +1,11 @@
 package com.example.plannereventos.strategy;
 
+import org.springframework.stereotype.Component;
+
 import com.example.plannereventos.exception.MatriculaInvalidaException;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.model.Participante;
-import org.springframework.stereotype.Component;
 
 @Component
 public class EventoExclusivoAlunosStrategy implements ElegibilidadeStrategy {

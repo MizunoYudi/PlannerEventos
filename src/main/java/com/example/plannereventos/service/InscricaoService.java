@@ -1,9 +1,24 @@
 package com.example.plannereventos.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.example.plannereventos.dto.InscricaoCancelarRequest;
 import com.example.plannereventos.dto.InscricaoCreateRequest;
 import com.example.plannereventos.dto.InscricaoResponse;
-import com.example.plannereventos.exception.*;
+import com.example.plannereventos.exception.CancelamentoInscricaoInvalidoException;
+import com.example.plannereventos.exception.EventoCanceladoException;
+import com.example.plannereventos.exception.EventoJaIniciadoException;
+import com.example.plannereventos.exception.EventoNaoEncontradoException;
+import com.example.plannereventos.exception.InscricaoDuplicadaException;
+import com.example.plannereventos.exception.InscricaoNaoEncontradaException;
+import com.example.plannereventos.exception.ParticipanteNaoEncontradoException;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.model.ModalidadeEvento;
@@ -59,47 +74,89 @@ public class InscricaoService {
     }
 
     public List<InscricaoResponse> listarPorEvento(int eventoId) {
+
         validarExistenciaEvento(eventoId);
-        return inscricaoRepository.listarPorEvento(eventoId)
+
+        return inscricaoRepository
+                .listarPorEvento(eventoId)
                 .stream()
                 .map(InscricaoResponse::new)
                 .toList();
     }
 
-    public List<InscricaoResponse> listarPorParticipante(UUID participanteId) {
+    public List<InscricaoResponse> listarPorParticipante(
+            UUID participanteId) {
+
         validarExistenciaParticipante(participanteId);
-        return inscricaoRepository.listarPorParticipante(participanteId)
+
+        return inscricaoRepository
+                .listarPorParticipante(participanteId)
                 .stream()
                 .map(InscricaoResponse::new)
                 .toList();
     }
 
-    public InscricaoResponse buscarPorEventoEParticipante(int eventoId, UUID participanteId) {
+    public InscricaoResponse buscarPorEventoEParticipante(
+            int eventoId,
+            UUID participanteId) {
+
         validarExistenciaEvento(eventoId);
         validarExistenciaParticipante(participanteId);
 
-        Inscricao inscricao = inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId)
-                .orElseThrow(() -> new InscricaoNaoEncontradaException(eventoId, participanteId));
+        Inscricao inscricao = inscricaoRepository
+                .buscarPorEventoEParticipante(
+                        eventoId,
+                        participanteId
+                )
+                .orElseThrow(
+                        () -> new InscricaoNaoEncontradaException(
+                                eventoId,
+                                participanteId
+                        )
+                );
 
         return new InscricaoResponse(inscricao);
     }
 
-    public InscricaoResponse inscrever(int eventoId, InscricaoCreateRequest request) {
-        Evento evento = buscarEventoOuFalhar(eventoId);
-        UUID participanteId = request.getParticipanteId();
-        Participante participante = buscarParticipanteOuFalhar(participanteId);
+    public InscricaoResponse inscrever(
+            int eventoId,
+            InscricaoCreateRequest request) {
 
-        if ("CANCELADO".equalsIgnoreCase(evento.getStatus())) {
+        Evento evento
+                = buscarEventoOuFalhar(eventoId);
+
+        UUID participanteId
+                = request.getParticipanteId();
+
+        Participante participante
+                = buscarParticipanteOuFalhar(participanteId);
+
+        if ("CANCELADO".equalsIgnoreCase(
+                evento.getStatus())) {
+
             throw new EventoCanceladoException(eventoId);
         }
 
-        LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), evento.getHoraInicio());
-        if (!LocalDateTime.now().isBefore(inicioEvento)) {
+        LocalDateTime inicioEvento
+                = LocalDateTime.of(
+                        evento.getData(),
+                        evento.getHoraInicio()
+                );
+
+        if (!LocalDateTime.now()
+                .isBefore(inicioEvento)) {
+
             throw new EventoJaIniciadoException(eventoId);
         }
 
-        if (inscricaoRepository.existeConfirmada(eventoId, participanteId)) {
-            throw new InscricaoDuplicadaException(eventoId, participanteId);
+        if (inscricaoRepository.existeConfirmada(
+                eventoId,
+                participanteId)) {
+
+            throw new InscricaoDuplicadaException(
+                    eventoId,
+                    participanteId
+            );
         }
 
         ElegibilidadeStrategy strategy = estrategiasElegibilidade.get(
@@ -111,14 +168,26 @@ public class InscricaoService {
                     participante);
         }
 
-        Inscricao novaInscricao = new Inscricao();
+        Inscricao novaInscricao
+                = new Inscricao();
+
         novaInscricao.setIdEvento(eventoId);
         novaInscricao.setParticipanteId(participanteId);
-        novaInscricao.setDataCriacao(LocalDateTime.now());
-        novaInscricao.setStatus(STATUS_CONFIRMADA);
+        novaInscricao.setDataCriacao(
+                LocalDateTime.now()
+        );
+        novaInscricao.setStatus(
+                STATUS_CONFIRMADA
+        );
 
-        Inscricao inscricaoSalva = inscricaoRepository.salvar(novaInscricao);
-        return new InscricaoResponse(inscricaoSalva);
+        Inscricao inscricaoSalva
+                = inscricaoRepository.salvar(
+                        novaInscricao
+                );
+
+        return new InscricaoResponse(
+                inscricaoSalva
+        );
     }
 
     public void cancelarInscricao(
@@ -171,25 +240,51 @@ public class InscricaoService {
         inscricaoRepository.salvar(inscricao);
     }
 
-    private Evento buscarEventoOuFalhar(int eventoId) {
-        return eventoRepository.buscarPorId(eventoId)
-                .orElseThrow(() -> new EventoNaoEncontradoException(eventoId));
+    private Evento buscarEventoOuFalhar(
+            int eventoId) {
+
+        return eventoRepository
+                .buscarPorId(eventoId)
+                .orElseThrow(
+                        () -> new EventoNaoEncontradoException(
+                                eventoId
+                        )
+                );
     }
 
-    private Participante buscarParticipanteOuFalhar(UUID participanteId) {
-        return participanteRepository.buscarPorId(participanteId)
-                .orElseThrow(() -> new ParticipanteNaoEncontradoException(participanteId));
+    private Participante buscarParticipanteOuFalhar(
+            UUID participanteId) {
+
+        return participanteRepository
+                .buscarPorId(participanteId)
+                .orElseThrow(
+                        () -> new ParticipanteNaoEncontradoException(
+                                participanteId
+                        )
+                );
     }
 
-    private void validarExistenciaEvento(int eventoId) {
-        if (!eventoRepository.existePorId(eventoId)) {
-            throw new EventoNaoEncontradoException(eventoId);
+    private void validarExistenciaEvento(
+            int eventoId) {
+
+        if (!eventoRepository.existePorId(
+                eventoId)) {
+
+            throw new EventoNaoEncontradoException(
+                    eventoId
+            );
         }
     }
 
-    private void validarExistenciaParticipante(UUID participanteId) {
-        if (!participanteRepository.existePorId(participanteId)) {
-            throw new ParticipanteNaoEncontradoException(participanteId);
+    private void validarExistenciaParticipante(
+            UUID participanteId) {
+
+        if (!participanteRepository.existePorId(
+                participanteId)) {
+
+            throw new ParticipanteNaoEncontradoException(
+                    participanteId
+            );
         }
     }
 }
