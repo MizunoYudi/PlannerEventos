@@ -10,6 +10,9 @@ import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.repository.EventoRepository;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
 
 @Component
 public class CancelamentoEventoAbertoStrategy
@@ -29,10 +32,10 @@ public class CancelamentoEventoAbertoStrategy
 
         Evento evento = eventoRepository
                 .buscarPorId(inscricao.getIdEvento())
-                .orElseThrow(()
-                        -> new EventoNaoEncontradoException(
-                        inscricao.getIdEvento()
-                )
+                .orElseThrow(() ->
+                        new EventoNaoEncontradoException(
+                                inscricao.getIdEvento()
+                        )
                 );
 
         LocalDateTime inicioEvento = LocalDateTime.of(
