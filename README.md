@@ -171,26 +171,6 @@ Todo evento possui uma modalidade, informada no campo `modalidade` do cadastro
 }
 ```
 
-### [GET] /api/eventos/{eventoId}/inscricoes/{participanteId}/comprovante — evento `EXCLUSIVO_ALUNOS` ou `RESTRICAO_IDADE`
-```json
-{
-  "tipo": "DIGITAL_COMPLETO",
-  "inscricaoId": 2,
-  "eventoId": 2,
-  "participanteId": "550e8400-e29b-41d4-a716-446655440000",
-  "dataInscricao": "2026-10-05T09:35:00",
-  "nomeParticipante": "Maria da Silva",
-  "tituloEvento": "Workshop Exclusivo para Alunos",
-  "dataEvento": "2026-12-20",
-  "horaInicio": "10:00",
-  "horaFim": "14:00",
-  "localEvento": "Auditório Principal",
-  "modalidade": "EXCLUSIVO_ALUNOS",
-  "qrCode": {
-    "hash": "1e2baff9d7bc4bb22ff4b4287e789abf7efa14c806b9578c582a2ab6916357c3",
-    "payload": "PLANNEREVENTOS|evento=2|participante=550e8400-e29b-41d4-a716-446655440000|hash=1e2baff9d7bc4bb22ff4b4287e789abf7efa14c806b9578c582a2ab6916357c3"
-  }
-}
 ```
 
 ### [GET] /api/eventos/{id}/vagas
@@ -206,14 +186,12 @@ Todo evento possui uma modalidade, informada no campo `modalidade` do cadastro
 ## Comprovantes
 
 O comprovante é gerado automaticamente ao concluir a inscrição e já vem no campo `comprovante` da
-resposta do `POST`. Ele também pode ser consultado depois pelo endpoint
-`GET /api/eventos/{eventoId}/inscricoes/{participanteId}/comprovante`.
+resposta do `POST`.
 
 - **Simples** (eventos `ABERTO`): resumo textual da inscrição, sem QR Code.
 - **Digital completo** (eventos `EXCLUSIVO_ALUNOS` e `RESTRICAO_IDADE`): dados detalhados do evento e
   um QR Code. O `hash` do QR Code é um SHA-256 gerado a partir do identificador do evento, do identificador
-  do participante e do momento da inscrição, e vai dentro do `payload`. Como depende só desses dados,
-  consultar o comprovante novamente devolve sempre o mesmo QR Code.
+  do participante e do momento da inscrição, e vai dentro do `payload`.
 - Apenas inscrições **confirmadas** têm comprovante. Para uma inscrição cancelada, a consulta retorna `422`.
 
 
