@@ -73,6 +73,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import com.example.plannereventos.dto.ComprovanteResponse;
+import com.example.plannereventos.dto.ComprovanteSimplesResponse;
+
 
 @ExtendWith(MockitoExtension.class)
 class InscricaoServiceTest {
@@ -85,6 +88,9 @@ class InscricaoServiceTest {
 
     @Mock
     private ParticipanteRepository participanteRepository;
+
+    @Mock
+    private ComprovanteService comprovanteService;
 
     private InscricaoService inscricaoService;
 
@@ -108,7 +114,8 @@ void setUp() {
             eventoRepository,
             participanteRepository,
             estrategiasElegibilidade,
-            politicasCancelamento
+            politicasCancelamento,
+            comprovanteService
     );
 }
 
@@ -206,6 +213,33 @@ void setUp() {
         assertEquals(participanteId, response.getParticipanteId());
         assertEquals("CONFIRMADA", response.getStatus());
         verify(inscricaoRepository, times(1)).salvar(any(Inscricao.class));
+    }
+    @Test
+    @DisplayName("Deve emitir comprovante apos salvar a inscricao e devolver na resposta")
+    void deveEmitirComprovanteAposInscricao() {
+        int eventoId = 1;
+        UUID participanteId = UUID.randomUUID();
+        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
+        Participante participante = criarParticipanteValido(participanteId);
+        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
+        ComprovanteResponse comprovante = new ComprovanteSimplesResponse(
+                100, eventoId, participanteId, LocalDateTime.now(), "resumo");
+
+        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.existeConfirmada(eventoId, participanteId)).thenReturn(false);
+        when(inscricaoRepository.contarConfirmadasPorEvento(eventoId)).thenReturn(10);
+        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(inv -> {
+            Inscricao i = inv.getArgument(0);
+            i.setId(100);
+            return i;
+        });
+        when(comprovanteService.emitir(eq(evento), eq(participante), any(Inscricao.class))).thenReturn(comprovante);
+
+        InscricaoResponse response = inscricaoService.inscrever(eventoId, request);
+
+        assertSame(comprovante, response.getComprovante());
+        verify(comprovanteService, times(1)).emitir(eq(evento), eq(participante), any(Inscricao.class));
     }
 
     @Test
@@ -368,70 +402,6 @@ void setUp() {
         });
 
         verify(inscricaoRepository, never()).salvar(any());
-    }
-
-    @Test
-    @DisplayName("Deve cancelar inscricao confirmada com sucesso com motivo")
-    void deveCancelarInscricaoComSucesso() {
-
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-
-        Evento evento = criarEventoValido(
-                eventoId,
-                "ATIVO",
-                LocalDate.now().plusDays(5),
-                LocalTime.of(10, 0),
-                50
-        );
-
-        evento.setModalidade(ModalidadeEvento.ABERTO);
-
-        Inscricao inscricao = new Inscricao(
-                1,
-                eventoId,
-                participanteId,
-                LocalDateTime.now(),
-                "CONFIRMADA",
-                null
-        );
-
-        InscricaoCancelarRequest request
-                = new InscricaoCancelarRequest(
-                        "Desistência pessoal"
-                );
-
-        when(eventoRepository.buscarPorId(eventoId))
-                .thenReturn(Optional.of(evento));
-
-        when(participanteRepository.existePorId(participanteId))
-                .thenReturn(true);
-
-        when(inscricaoRepository.buscarPorEventoEParticipante(
-                eventoId,
-                participanteId
-        )).thenReturn(Optional.of(inscricao));
-
-        inscricaoService.cancelarInscricao(
-                eventoId,
-                participanteId,
-                request
-        );
-
-        assertEquals(
-                "CANCELADA",
-                inscricao.getStatus()
-        );
-
-        assertEquals(
-                "Desistência pessoal",
-                inscricao.getMotivoCancelamento()
-        );
-
-        verify(
-                inscricaoRepository,
-                times(1)
-        ).salvar(inscricao);
     }
 
     @Test

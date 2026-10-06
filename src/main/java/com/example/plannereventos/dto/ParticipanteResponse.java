@@ -41,6 +41,7 @@ public class ParticipanteResponse {
         response.matricula = participante.getMatricula();
         response.matriculaAtiva = participante.getMatriculaAtiva();
         response.dataNascimento = participante.getDataNascimento();
+        response.criadoEm = participante.getCriadoEm();
         return response;
     }
 
