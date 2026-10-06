@@ -1,15 +1,23 @@
 package com.example.plannereventos.exception;
 
+import com.example.plannereventos.dto.ErrorMessage;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.util.stream.Collectors;
+import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler({
             EmailJaCadastradoException.class,
@@ -24,11 +32,8 @@ public class GlobalExceptionHandler {
             CancelamentoForaDoPrazoException.class,
             MotivoCancelamentoObrigatorioException.class
     })
-    public ResponseEntity<String> handleRegraDeNegocio(Exception ex) {
-
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(ex.getMessage());
+    public ResponseEntity<ErrorMessage> handleRegraDeNegocio(Exception ex, HttpServletRequest request) {
+        return montarResposta(HttpStatus.UNPROCESSABLE_ENTITY, List.of(ex.getMessage()), request);
     }
 
     @ExceptionHandler({
@@ -36,27 +41,47 @@ public class GlobalExceptionHandler {
             EventoNaoEncontradoException.class,
             InscricaoNaoEncontradaException.class
     })
-    public ResponseEntity<String> handleRecursoNaoEncontrado(Exception ex) {
-
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(ex.getMessage());
+    public ResponseEntity<ErrorMessage> handleRecursoNaoEncontrado(Exception ex, HttpServletRequest request) {
+        return montarResposta(HttpStatus.NOT_FOUND, List.of(ex.getMessage()), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidacao(
-            MethodArgumentNotValidException ex) {
-
-        String erros = ex.getBindingResult()
+    public ResponseEntity<ErrorMessage> handleValidacao(MethodArgumentNotValidException ex, HttpServletRequest request) {
+        List<String> erros = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(error ->
-                        error.getField() + ": " + error.getDefaultMessage()
-                )
-                .collect(Collectors.joining("; "));
+                .map(erro -> erro.getField() + ": " + erro.getDefaultMessage())
+                .toList();
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(erros);
+        return montarResposta(HttpStatus.BAD_REQUEST, erros, request);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorMessage> handleCorpoInvalido(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        return montarResposta(HttpStatus.BAD_REQUEST,
+                List.of("Corpo da requisicao invalido ou mal formatado"), request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorMessage> handleParametroInvalido(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        return montarResposta(HttpStatus.BAD_REQUEST,
+                List.of("Valor invalido para o parametro '" + ex.getName() + "'"), request);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorMessage> handleErroInterno(IllegalStateException ex, HttpServletRequest request) {
+        log.error("Erro interno ao processar " + request.getRequestURI(), ex);
+        return montarResposta(HttpStatus.INTERNAL_SERVER_ERROR,
+                List.of("Erro interno do servidor"), request);
+    }
+
+    private ResponseEntity<ErrorMessage> montarResposta(HttpStatus status, List<String> mensagens, HttpServletRequest request) {
+        ErrorMessage corpo = new ErrorMessage(
+                status.value(),
+                status.getReasonPhrase(),
+                mensagens,
+                request.getRequestURI());
+
+        return ResponseEntity.status(status).body(corpo);
     }
 }
