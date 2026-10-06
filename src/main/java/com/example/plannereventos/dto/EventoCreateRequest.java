@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-
+import jakarta.validation.constraints.AssertTrue;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -37,6 +37,18 @@ public class EventoCreateRequest {
 
     @Min(value = 0, message = "A idade minima nao pode ser negativa")
     private Integer idadeMinima;
+
+    @AssertTrue(message = "O horario de termino deve ser posterior ao horario de inicio")
+    public boolean isHorarioValido() {
+        if (horaInicio == null || horaFim == null) return true;
+        return horaFim.isAfter(horaInicio);
+    }
+
+    @AssertTrue(message = "A idade minima e obrigatoria e deve ser maior que 0 para eventos com restricao de idade")
+    public boolean isIdadeMinimaValida() {
+        if (modalidade != ModalidadeEvento.RESTRICAO_IDADE) return true;
+        return idadeMinima != null && idadeMinima > 0;
+    }
 
     public EventoCreateRequest() {
     }
