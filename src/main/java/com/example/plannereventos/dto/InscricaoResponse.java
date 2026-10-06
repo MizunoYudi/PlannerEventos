@@ -2,7 +2,7 @@ package com.example.plannereventos.dto;
 
 import com.example.plannereventos.model.Inscricao;
 import com.fasterxml.jackson.annotation.JsonFormat;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -16,6 +16,9 @@ public class InscricaoResponse {
 
     private String status;
     private String motivoCancelamento;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private ComprovanteResponse comprovante;
 
     public InscricaoResponse() {
     }
@@ -36,6 +39,11 @@ public class InscricaoResponse {
         this.dataCriacao = inscricao.getDataCriacao();
         this.status = inscricao.getStatus();
         this.motivoCancelamento = inscricao.getMotivoCancelamento();
+    }
+
+    public InscricaoResponse(Inscricao inscricao, ComprovanteResponse comprovante) {
+        this(inscricao);
+        this.comprovante = comprovante;
     }
 
     public int getId() {
@@ -84,5 +92,13 @@ public class InscricaoResponse {
 
     public void setMotivoCancelamento(String motivoCancelamento) {
         this.motivoCancelamento = motivoCancelamento;
+    }
+
+    public ComprovanteResponse getComprovante() {
+        return comprovante;
+    }
+
+    public void setComprovante(ComprovanteResponse comprovante) {
+        this.comprovante = comprovante;
     }
 }

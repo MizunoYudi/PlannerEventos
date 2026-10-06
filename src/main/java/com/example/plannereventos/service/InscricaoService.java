@@ -13,6 +13,7 @@ import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
 import com.example.plannereventos.strategy.ElegibilidadeStrategy;
 import com.example.plannereventos.strategy.PoliticaCancelamentoStrategy;
+import com.example.plannereventos.dto.ComprovanteResponse;
 
 import org.springframework.stereotype.Service;
 
@@ -35,13 +36,15 @@ public class InscricaoService {
     private final Map<ModalidadeEvento, ElegibilidadeStrategy> estrategiasElegibilidade;
 
     private final Map<ModalidadeEvento, PoliticaCancelamentoStrategy> politicasCancelamento;
+    private final ComprovanteService comprovanteService;
 
     public InscricaoService(
             InscricaoRepository inscricaoRepository,
             EventoRepository eventoRepository,
             ParticipanteRepository participanteRepository,
             List<ElegibilidadeStrategy> listaEstrategias,
-            List<PoliticaCancelamentoStrategy> listaPoliticasCancelamento) {
+            List<PoliticaCancelamentoStrategy> listaPoliticasCancelamento,
+            ComprovanteService comprovanteService) {
 
         this.inscricaoRepository = inscricaoRepository;
         this.eventoRepository = eventoRepository;
@@ -56,6 +59,7 @@ public class InscricaoService {
                 .collect(Collectors.toMap(
                         PoliticaCancelamentoStrategy::getModalidade,
                         Function.identity()));
+        this.comprovanteService = comprovanteService;
     }
 
     public List<InscricaoResponse> listarPorEvento(int eventoId) {
@@ -118,7 +122,8 @@ public class InscricaoService {
         novaInscricao.setStatus(STATUS_CONFIRMADA);
 
         Inscricao inscricaoSalva = inscricaoRepository.salvar(novaInscricao);
-        return new InscricaoResponse(inscricaoSalva);
+        ComprovanteResponse comprovante = comprovanteService.emitir(evento, participante, inscricaoSalva);
+        return new InscricaoResponse(inscricaoSalva, comprovante);
     }
 
     public void cancelarInscricao(
