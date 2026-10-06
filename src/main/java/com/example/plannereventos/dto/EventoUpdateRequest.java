@@ -45,6 +45,12 @@ public class EventoUpdateRequest {
         return horaFim.isAfter(horaInicio);
     }
 
+    @AssertTrue(message = "A idade mínima é obrigatória e deve ser maior que 0 para eventos com restrição de idade")
+    public boolean isIdadeMinimaValida() {
+        if (modalidade != ModalidadeEvento.RESTRICAO_IDADE) return true;
+        return idadeMinima != null && idadeMinima > 0;
+    }
+
     public String getTitulo() { return titulo; }
 
     public void setTitulo(String titulo) { this.titulo = titulo; }
