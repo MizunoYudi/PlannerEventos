@@ -171,8 +171,6 @@ Todo evento possui uma modalidade, informada no campo `modalidade` do cadastro
 }
 ```
 
-```
-
 ### [GET] /api/eventos/{id}/vagas
 ```json
 {
