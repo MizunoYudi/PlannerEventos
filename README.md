@@ -44,6 +44,17 @@ Todos os endpoints são servidos sob o prefixo:
 
 Exemplo local: `http://localhost:8080/api/eventos`
 
+## Modalidades de evento
+
+Todo evento possui uma modalidade, informada no campo `modalidade` do cadastro
+(quando omitida, o evento é cadastrado como `ABERTO`).
+
+| Modalidade | Elegibilidade para se inscrever | Cancelamento da inscrição | Comprovante |
+|---|---|---|---|
+| `ABERTO` | Existência de vagas disponíveis | Livre, até o início do evento | Simples |
+| `EXCLUSIVO_ALUNOS` | Participante com número de matrícula informado e ativo | Até 24 horas antes do início do evento | Digital completo (com QR Code) |
+| `RESTRICAO_IDADE` | Idade na data do evento maior ou igual à `idadeMinima` (exige data de nascimento no cadastro do participante) | Exige o motivo do cancelamento | Digital completo (com QR Code) |
+
 ## Endpoints
 
 ### Eventos
@@ -85,6 +96,8 @@ Exemplo local: `http://localhost:8080/api/eventos`
   "horaFim": "22:30",
   "local": "Auditório Principal",
   "capacidadeMaxima": 120
+  "modalidade": "RESTRICAO_IDADE",
+  "idadeMinima": 18
 }
 ```
 
@@ -98,6 +111,14 @@ Exemplo local: `http://localhost:8080/api/eventos`
   "horaFim": "22:30",
   "local": "Auditório Principal",
   "capacidadeMaxima": 120
+  "modalidade": "RESTRICAO_IDADE",
+  "idadeMinima": 18
+}
+```
+### [PATCH] /api/eventos/{id}/cancelamento
+```json
+{
+  "motivoCancelamento": "Palestrante indisponível"
 }
 ```
 
@@ -105,7 +126,10 @@ Exemplo local: `http://localhost:8080/api/eventos`
 ```json
 {
   "nome": "Maria da Silva",
-  "email": "maria.silva@example.com"
+  "email": "maria.silva@example.com",
+  "matricula": "2026001",
+  "matriculaAtiva": true,
+  "dataNascimento": "2000-05-10"
 }
 ```
 
@@ -124,3 +148,87 @@ Exemplo local: `http://localhost:8080/api/eventos`
 }
 ```
 
+## Exemplos de Respostas
+
+### [POST] /api/eventos/{eventoId}/inscricoes — evento `ABERTO`
+
+```json
+{
+  "id": 1,
+  "eventoId": 1,
+  "participanteId": "550e8400-e29b-41d4-a716-446655440000",
+  "dataCriacao": "2026-10-05T09:30:00",
+  "status": "CONFIRMADA",
+  "motivoCancelamento": null,
+  "comprovante": {
+    "tipo": "SIMPLES",
+    "inscricaoId": 1,
+    "eventoId": 1,
+    "participanteId": "550e8400-e29b-41d4-a716-446655440000",
+    "dataInscricao": "2026-10-05T09:30:00",
+    "resumo": "COMPROVANTE DE INSCRICAO\nInscricao: 1 (CONFIRMADA)\nParticipante: Maria da Silva\nEvento: Semana de Tecnologia\nData: 15/12/2026 as 19:00\nLocal: Auditório Principal"
+  }
+}
+```
+
+### [GET] /api/eventos/{eventoId}/inscricoes/{participanteId}/comprovante — evento `EXCLUSIVO_ALUNOS` ou `RESTRICAO_IDADE`
+```json
+{
+  "tipo": "DIGITAL_COMPLETO",
+  "inscricaoId": 2,
+  "eventoId": 2,
+  "participanteId": "550e8400-e29b-41d4-a716-446655440000",
+  "dataInscricao": "2026-10-05T09:35:00",
+  "nomeParticipante": "Maria da Silva",
+  "tituloEvento": "Workshop Exclusivo para Alunos",
+  "dataEvento": "2026-12-20",
+  "horaInicio": "10:00",
+  "horaFim": "14:00",
+  "localEvento": "Auditório Principal",
+  "modalidade": "EXCLUSIVO_ALUNOS",
+  "qrCode": {
+    "hash": "1e2baff9d7bc4bb22ff4b4287e789abf7efa14c806b9578c582a2ab6916357c3",
+    "payload": "PLANNEREVENTOS|evento=2|participante=550e8400-e29b-41d4-a716-446655440000|hash=1e2baff9d7bc4bb22ff4b4287e789abf7efa14c806b9578c582a2ab6916357c3"
+  }
+}
+```
+
+### [GET] /api/eventos/{id}/vagas
+```json
+{
+  "id": 1,
+  "capacidadeMaxima": 120,
+  "inscricoesConfirmadas": 37,
+  "vagasDisponiveis": 83
+}
+```
+
+## Comprovantes
+
+O comprovante é gerado automaticamente ao concluir a inscrição e já vem no campo `comprovante` da
+resposta do `POST`. Ele também pode ser consultado depois pelo endpoint
+`GET /api/eventos/{eventoId}/inscricoes/{participanteId}/comprovante`.
+
+- **Simples** (eventos `ABERTO`): resumo textual da inscrição, sem QR Code.
+- **Digital completo** (eventos `EXCLUSIVO_ALUNOS` e `RESTRICAO_IDADE`): dados detalhados do evento e
+  um QR Code. O `hash` do QR Code é um SHA-256 gerado a partir do identificador do evento, do identificador
+  do participante e do momento da inscrição, e vai dentro do `payload`. Como depende só desses dados,
+  consultar o comprovante novamente devolve sempre o mesmo QR Code.
+- Apenas inscrições **confirmadas** têm comprovante. Para uma inscrição cancelada, a consulta retorna `422`.
+
+
+## Tratamento de Erros
+
+Todas as respostas de erro seguem o mesmo formato:
+
+```json
+{
+  "timestamp": "2026-10-05T19:30:00",
+  "status": 422,
+  "error": "Unprocessable Entity",
+  "mensagens": [
+    "Inscrição permitida apenas para alunos com matrícula ativa."
+  ],
+  "path": "/api/eventos/2/inscricoes"
+}
+```

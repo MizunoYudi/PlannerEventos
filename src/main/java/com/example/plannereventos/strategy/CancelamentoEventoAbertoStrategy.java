@@ -1,5 +1,9 @@
 package com.example.plannereventos.strategy;
 
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Component;
+
 import com.example.plannereventos.exception.CancelamentoForaDoPrazoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.model.Evento;

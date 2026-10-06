@@ -1,5 +1,10 @@
 package com.example.plannereventos.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.example.plannereventos.dto.EventoCreateRequest;
 import com.example.plannereventos.dto.EventoResponse;
 import com.example.plannereventos.dto.EventoUpdateRequest;
@@ -11,10 +16,6 @@ import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 public class EventoService {
