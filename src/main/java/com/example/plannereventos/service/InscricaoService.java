@@ -1,24 +1,10 @@
 package com.example.plannereventos.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-
+import com.example.plannereventos.dto.ComprovanteResponse;
 import com.example.plannereventos.dto.InscricaoCancelarRequest;
 import com.example.plannereventos.dto.InscricaoCreateRequest;
 import com.example.plannereventos.dto.InscricaoResponse;
-import com.example.plannereventos.exception.CancelamentoInscricaoInvalidoException;
-import com.example.plannereventos.exception.EventoCanceladoException;
-import com.example.plannereventos.exception.EventoJaIniciadoException;
-import com.example.plannereventos.exception.EventoNaoEncontradoException;
-import com.example.plannereventos.exception.InscricaoDuplicadaException;
-import com.example.plannereventos.exception.InscricaoNaoEncontradaException;
-import com.example.plannereventos.exception.ParticipanteNaoEncontradoException;
+import com.example.plannereventos.exception.*;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.model.ModalidadeEvento;
@@ -28,8 +14,6 @@ import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
 import com.example.plannereventos.strategy.ElegibilidadeStrategy;
 import com.example.plannereventos.strategy.PoliticaCancelamentoStrategy;
-import com.example.plannereventos.dto.ComprovanteResponse;
-
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

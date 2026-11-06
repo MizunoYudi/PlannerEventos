@@ -1,12 +1,11 @@
 package com.example.plannereventos.strategy;
 
-import org.springframework.stereotype.Component;
-
 import com.example.plannereventos.exception.EventoSemVagasException;
 import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.model.Participante;
 import com.example.plannereventos.repository.InscricaoRepository;
+import org.springframework.stereotype.Component;
 
 @Component
 public class EventoAbertoStrategy implements ElegibilidadeStrategy {
