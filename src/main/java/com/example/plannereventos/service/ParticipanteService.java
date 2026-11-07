@@ -1,11 +1,5 @@
 package com.example.plannereventos.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.stereotype.Service;
-
 import com.example.plannereventos.dto.ParticipanteCreateRequest;
 import com.example.plannereventos.dto.ParticipanteResponse;
 import com.example.plannereventos.dto.ParticipanteUpdateRequest;
@@ -13,6 +7,11 @@ import com.example.plannereventos.exception.EmailJaCadastradoException;
 import com.example.plannereventos.exception.ParticipanteNaoEncontradoException;
 import com.example.plannereventos.model.Participante;
 import com.example.plannereventos.repository.ParticipanteRepository;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ParticipanteService {

@@ -2,11 +2,7 @@ package com.example.plannereventos.strategy;
 
 import com.example.plannereventos.dto.ComprovanteResponse;
 import com.example.plannereventos.dto.ComprovanteSimplesResponse;
-import com.example.plannereventos.model.Evento;
-import com.example.plannereventos.model.Inscricao;
-import com.example.plannereventos.model.ModalidadeEvento;
-import com.example.plannereventos.model.Participante;
-import com.example.plannereventos.model.TipoComprovante;
+import com.example.plannereventos.model.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
