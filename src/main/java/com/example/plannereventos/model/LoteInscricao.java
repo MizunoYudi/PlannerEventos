@@ -1,3 +1,5 @@
+package com.example.plannereventos.model;
+
 public enum LoteInscricao {
     PROMOCIONAL(0.20),
     LOTE_1(0.10),
