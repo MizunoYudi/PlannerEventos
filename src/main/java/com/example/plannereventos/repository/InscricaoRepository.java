@@ -2,7 +2,6 @@ package com.example.plannereventos.repository;
 
 import com.example.plannereventos.model.Inscricao;
 import org.springframework.stereotype.Repository;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,9 +48,15 @@ public class InscricaoRepository {
 
     public Optional<Inscricao> buscarPorEventoEParticipante(int eventoId, UUID participanteId) {
         if (participanteId == null) return Optional.empty();
-        return storage.values().stream()
+
+        List<Inscricao> doParticipante = storage.values().stream()
                 .filter(i -> i.getIdEvento() == eventoId && participanteId.equals(i.getParticipanteId()))
-                .findFirst();
+                .toList();
+
+        return doParticipante.stream()
+                .filter(i -> "CONFIRMADA".equalsIgnoreCase(i.getStatus()))
+                .findFirst()
+                .or(() -> doParticipante.stream().max(Comparator.comparingInt(Inscricao::getId)));
     }
 
     public boolean existeConfirmada(int eventoId, UUID participanteId) {
