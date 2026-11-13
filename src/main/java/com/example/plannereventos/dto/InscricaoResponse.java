@@ -11,6 +11,9 @@ public class InscricaoResponse {
     private int eventoId;
     private UUID participanteId;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String nomeParticipante;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dataCriacao;
 
@@ -69,6 +72,10 @@ public class InscricaoResponse {
     public void setParticipanteId(UUID participanteId) {
         this.participanteId = participanteId;
     }
+
+    public String getNomeParticipante() { return nomeParticipante; }
+
+    public void setNomeParticipante(String nomeParticipante) { this.nomeParticipante = nomeParticipante; }
 
     public LocalDateTime getDataCriacao() {
         return dataCriacao;

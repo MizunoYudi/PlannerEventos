@@ -190,7 +190,121 @@ void setUp() {
         InscricaoResponse response = inscricaoService.inscrever(eventoId, request);
 
         assertSame(comprovante, response.getComprovante());
+        assertEquals("Carlos Silva", response.getNomeParticipante());
         verify(comprovanteService, times(1)).emitir(eq(evento), eq(participante), any(Inscricao.class));
+    }
+
+    @Test
+    @DisplayName("Deve listar inscricoes do evento com o nome do participante e o comprovante das confirmadas")
+    void deveListarInscricoesDoEventoComNomeEComprovante() {
+        int eventoId = 1;
+        UUID participanteId = UUID.randomUUID();
+        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
+        Participante participante = criarParticipanteValido(participanteId);
+        Inscricao inscricao = new Inscricao(1, eventoId, participanteId, LocalDateTime.now(), "CONFIRMADA", null);
+        ComprovanteResponse comprovante = new ComprovanteSimplesResponse(
+                1, eventoId, participanteId, LocalDateTime.now(), "resumo");
+
+        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
+        when(inscricaoRepository.listarPorEvento(eventoId)).thenReturn(List.of(inscricao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(comprovanteService.emitir(evento, participante, inscricao)).thenReturn(comprovante);
+
+        List<InscricaoResponse> resultado = inscricaoService.listarPorEvento(eventoId);
+
+        assertEquals(1, resultado.size());
+        assertEquals("Carlos Silva", resultado.get(0).getNomeParticipante());
+        assertEquals(participanteId, resultado.get(0).getParticipanteId());
+        assertSame(comprovante, resultado.get(0).getComprovante());
+    }
+
+    @Test
+    @DisplayName("Nao deve emitir comprovante para inscricao cancelada na listagem do evento")
+    void naoDeveEmitirComprovanteDeInscricaoCanceladaNaListagem() {
+        int eventoId = 1;
+        UUID participanteId = UUID.randomUUID();
+        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
+        Participante participante = criarParticipanteValido(participanteId);
+        Inscricao cancelada = new Inscricao(1, eventoId, participanteId, LocalDateTime.now(), "CANCELADA", "Desistencia");
+
+        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
+        when(inscricaoRepository.listarPorEvento(eventoId)).thenReturn(List.of(cancelada));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+
+        List<InscricaoResponse> resultado = inscricaoService.listarPorEvento(eventoId);
+
+        assertEquals("Carlos Silva", resultado.get(0).getNomeParticipante());
+        assertEquals("CANCELADA", resultado.get(0).getStatus());
+        assertNull(resultado.get(0).getComprovante());
+        verify(comprovanteService, never()).emitir(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Deve devolver lista vazia quando o evento nao tem inscricoes")
+    void deveListarVazioQuandoEventoNaoTemInscricoes() {
+        int eventoId = 1;
+        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
+
+        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
+        when(inscricaoRepository.listarPorEvento(eventoId)).thenReturn(List.of());
+
+        assertTrue(inscricaoService.listarPorEvento(eventoId).isEmpty());
+        verify(comprovanteService, never()).emitir(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Deve lancar EventoNaoEncontradoException ao listar inscricoes de evento inexistente")
+    void deveLancarExcecaoAoListarInscricoesDeEventoInexistente() {
+        when(eventoRepository.buscarPorId(99)).thenReturn(Optional.empty());
+
+        assertThrows(EventoNaoEncontradoException.class, () -> inscricaoService.listarPorEvento(99));
+
+        verify(inscricaoRepository, never()).listarPorEvento(anyInt());
+    }
+
+    @Test
+    @DisplayName("Deve buscar inscricao confirmada com o nome do participante e o comprovante")
+    void deveBuscarInscricaoConfirmadaComNomeEComprovante() {
+        int eventoId = 1;
+        UUID participanteId = UUID.randomUUID();
+        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
+        Participante participante = criarParticipanteValido(participanteId);
+        Inscricao inscricao = new Inscricao(1, eventoId, participanteId, LocalDateTime.now(), "CONFIRMADA", null);
+        ComprovanteResponse comprovante = new ComprovanteSimplesResponse(
+                1, eventoId, participanteId, LocalDateTime.now(), "resumo");
+
+        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId))
+                .thenReturn(Optional.of(inscricao));
+        when(comprovanteService.emitir(evento, participante, inscricao)).thenReturn(comprovante);
+
+        InscricaoResponse resposta = inscricaoService.buscarPorEventoEParticipante(eventoId, participanteId);
+
+        assertEquals("Carlos Silva", resposta.getNomeParticipante());
+        assertSame(comprovante, resposta.getComprovante());
+    }
+
+    @Test
+    @DisplayName("Deve buscar inscricao cancelada com o nome do participante e sem comprovante")
+    void deveBuscarInscricaoCanceladaSemComprovante() {
+        int eventoId = 1;
+        UUID participanteId = UUID.randomUUID();
+        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
+        Participante participante = criarParticipanteValido(participanteId);
+        Inscricao cancelada = new Inscricao(1, eventoId, participanteId, LocalDateTime.now(), "CANCELADA", "Desistencia");
+
+        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId))
+                .thenReturn(Optional.of(cancelada));
+
+        InscricaoResponse resposta = inscricaoService.buscarPorEventoEParticipante(eventoId, participanteId);
+
+        assertEquals("Carlos Silva", resposta.getNomeParticipante());
+        assertEquals("CANCELADA", resposta.getStatus());
+        assertNull(resposta.getComprovante());
+        verify(comprovanteService, never()).emitir(any(), any(), any());
     }
 
     @Test
