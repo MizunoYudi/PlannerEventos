@@ -33,6 +33,13 @@ class CalculoValorFinalStrategyTest {
     }
 
     @Test
+    @DisplayName("RN08 - Deve retornar valor base quando o lote for nulo")
+    void deveRetornarValorBaseQuandoLoteForNulo() {
+        double valorFinal = calculoPadrao.calcular(100.0, null);
+        assertEquals(100.0, valorFinal, 0.001);
+    }
+
+    @Test
     @DisplayName("RN08 - Evento da modalidade Aberto deve retornar sempre zero independentemente do lote")
     void eventoAbertoDeveTerValorZeroIndependentementeDoLote() {
         assertEquals(0.0, calculoEventoAberto.calcular(150.0, LoteInscricao.PROMOCIONAL), 0.001);

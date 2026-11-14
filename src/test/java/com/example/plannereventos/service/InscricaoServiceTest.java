@@ -64,8 +64,8 @@ class InscricaoServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(elegibilidadeStrategy.getModalidade()).thenReturn(ModalidadeEvento.EXCLUSIVO_ALUNOS);
-        when(politicaCancelamentoStrategy.getModalidade()).thenReturn(ModalidadeEvento.EXCLUSIVO_ALUNOS);
+        lenient().when(elegibilidadeStrategy.getModalidade()).thenReturn(ModalidadeEvento.EXCLUSIVO_ALUNOS);
+        lenient().when(politicaCancelamentoStrategy.getModalidade()).thenReturn(ModalidadeEvento.EXCLUSIVO_ALUNOS);
 
         inscricaoService = new InscricaoService(
                 inscricaoRepository,
@@ -156,6 +156,7 @@ class InscricaoServiceTest {
         when(inscricaoRepository.contarConfirmadasPorEvento(1)).thenReturn(10);
         when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
         when(comprovanteService.emitir(any(), any(), any())).thenReturn(mock(ComprovanteResponse.class));
+
         InscricaoResponse response = inscricaoService.confirmarInscricao(1, participanteId);
 
         assertEquals("CONFIRMADA", response.getStatus());
@@ -236,5 +237,44 @@ class InscricaoServiceTest {
         assertThrows(StatusInvalidoException.class, () -> inscricaoService.cancelarInscricao(1, participanteId, null));
         verify(politicaCancelamentoStrategy, never()).validarCancelamento(any(), any());
         verify(inscricaoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("Deve listar inscrições por evento preenchendo o nome do participante")
+    void deveListarInscricoesPorEvento() {
+        Inscricao inscricao = new Inscricao(
+                10, 1, participanteId, LocalDateTime.now(),
+                StatusInscricao.CONFIRMADA, LoteInscricao.PROMOCIONAL, 80.0, null
+        );
+
+        lenient().when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        lenient().when(eventoRepository.existePorId(1)).thenReturn(true);
+        when(inscricaoRepository.listarPorEvento(1)).thenReturn(List.of(inscricao));
+        lenient().when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+
+        List<InscricaoResponse> resultado = inscricaoService.listarPorEvento(1);
+
+        assertEquals(1, resultado.size());
+        assertEquals(10, resultado.get(0).getId());
+    }
+
+    @Test
+    @DisplayName("Deve buscar inscrição por evento e participante")
+    void deveBuscarInscricaoPorEventoEParticipante() {
+        Inscricao inscricao = new Inscricao(
+                10, 1, participanteId, LocalDateTime.now(),
+                StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null
+        );
+
+        lenient().when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        lenient().when(eventoRepository.existePorId(1)).thenReturn(true);
+        lenient().when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        lenient().when(participanteRepository.existePorId(participanteId)).thenReturn(true);
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricao));
+
+        InscricaoResponse resultado = inscricaoService.buscarPorEventoEParticipante(1, participanteId);
+
+        assertNotNull(resultado);
+        assertEquals(10, resultado.getId());
     }
 }
