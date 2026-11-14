@@ -30,7 +30,9 @@ public class GlobalExceptionHandler {
             DataNascimentoObrigatoriaException.class,
             IdadeNaoPermitidaException.class,
             CancelamentoForaDoPrazoException.class,
-            MotivoCancelamentoObrigatorioException.class
+            MotivoCancelamentoObrigatorioException.class,
+            RegraNegocioException.class,
+            StatusInvalidoException.class
     })
     public ResponseEntity<ErrorMessage> handleRegraDeNegocio(Exception ex, HttpServletRequest request) {
         return montarResposta(HttpStatus.UNPROCESSABLE_ENTITY, List.of(ex.getMessage()), request);
