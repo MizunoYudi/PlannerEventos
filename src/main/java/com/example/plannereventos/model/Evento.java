@@ -27,12 +27,21 @@ public class Evento {
     public Evento() {
     }
 
-    public Evento(int id, String titulo, String descricao, LocalDate data, LocalTime horaInicio,
-                  LocalTime horaFim, String local, int capacidadeMaxima, String status,
-                  LocalDateTime criadoEm, ModalidadeEvento modalidade, Integer idadeMinima) {
-        this(id, titulo, descricao, data, horaInicio, horaFim, local,
-                capacidadeMaxima, status, criadoEm, modalidade, idadeMinima,
-                0.0, LoteInscricao.LOTE_2);
+    public Evento(int idEvento,
+                  String tituloEvento,
+                  String descricaoEvento,
+                  LocalDate dataEvento,
+                  LocalTime inicio,
+                  LocalTime fim,
+                  String localEvento,
+                  int capacidade,
+                  String statusEvento,
+                  LocalDateTime dataCriacao,
+                  ModalidadeEvento modalidadeEvento,
+                  Integer idadeMin) {
+        this(idEvento, tituloEvento, descricaoEvento, dataEvento, inicio, fim,
+                localEvento, capacidade, statusEvento, dataCriacao,
+                modalidadeEvento, idadeMin, 0.0, LoteInscricao.LOTE_2);
     }
 
     public Evento(int id,
