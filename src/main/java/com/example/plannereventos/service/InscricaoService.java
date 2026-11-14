@@ -60,9 +60,23 @@ public class InscricaoService {
     }
 
     public List<InscricaoResponse> listarPorEvento(int eventoId) {
-        validarExistenciaEvento(eventoId);
-        return inscricaoRepository.listarPorEvento(eventoId).stream()
-                .map(InscricaoResponse::new)
+        Evento evento = buscarEventoOuFalhar(eventoId);
+
+        return inscricaoRepository
+                .listarPorEvento(eventoId)
+                .stream()
+                .map(inscricao -> {
+                    Participante participante = buscarParticipanteOuFalhar(inscricao.getParticipanteId());
+
+                    InscricaoResponse response = new InscricaoResponse(inscricao);
+                    response.setNomeParticipante(participante.getNome());
+
+                    if (inscricao.getStatus() == StatusInscricao.CONFIRMADA) {
+                        response.setComprovante(comprovanteService.emitir(evento, participante, inscricao));
+                    }
+
+                    return response;
+                })
                 .toList();
     }
 
@@ -73,15 +87,31 @@ public class InscricaoService {
                 .toList();
     }
 
-    public InscricaoResponse buscarPorEventoEParticipante(int eventoId, UUID participanteId) {
-        validarExistenciaEvento(eventoId);
-        validarExistenciaParticipante(participanteId);
+    public InscricaoResponse buscarPorEventoEParticipante(
+            int eventoId,
+            UUID participanteId) {
+
+        Evento evento = buscarEventoOuFalhar(eventoId);
+        Participante participante = buscarParticipanteOuFalhar(participanteId);
 
         Inscricao inscricao = inscricaoRepository
-                .buscarPorEventoEParticipante(eventoId, participanteId)
-                .orElseThrow(() -> new InscricaoNaoEncontradaException(eventoId, participanteId));
+                .buscarPorEventoEParticipante(
+                        eventoId,
+                        participanteId
+                )
+                .orElseThrow(
+                        () -> new InscricaoNaoEncontradaException(
+                                eventoId,
+                                participanteId
+                        )
+                );
+        InscricaoResponse response = new InscricaoResponse(inscricao);
+        response.setNomeParticipante(participante.getNome());
 
-        return new InscricaoResponse(inscricao);
+        if (inscricao.getStatus() == StatusInscricao.CONFIRMADA) {
+            response.setComprovante(comprovanteService.emitir(evento, participante, inscricao));
+        }
+        return response;
     }
 
     public InscricaoResponse inscrever(int eventoId, InscricaoCreateRequest request) {
@@ -140,7 +170,9 @@ public class InscricaoService {
         Inscricao inscricaoSalva = inscricaoRepository.salvar(inscricao);
 
         ComprovanteResponse comprovante = comprovanteService.emitir(evento, participante, inscricaoSalva);
-        return new InscricaoResponse(inscricaoSalva, comprovante);
+        InscricaoResponse response = new InscricaoResponse(inscricaoSalva, comprovante);
+        response.setNomeParticipante(participante.getNome());
+        return response;
     }
 
     public void cancelarInscricao(int eventoId, UUID participanteId, InscricaoCancelarRequest request) {

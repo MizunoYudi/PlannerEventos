@@ -13,6 +13,9 @@ public class InscricaoResponse {
     private int eventoId;
     private UUID participanteId;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String nomeParticipante;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dataCriacao;
 
@@ -72,6 +75,9 @@ public class InscricaoResponse {
 
     public double getValorFinal() { return valorFinal; }
     public void setValorFinal(double valorFinal) { this.valorFinal = valorFinal; }
+    public String getNomeParticipante() { return nomeParticipante; }
+
+    public void setNomeParticipante(String nomeParticipante) { this.nomeParticipante = nomeParticipante; }
 
     public String getMotivoCancelamento() { return motivoCancelamento; }
     public void setMotivoCancelamento(String motivoCancelamento) { this.motivoCancelamento = motivoCancelamento; }
