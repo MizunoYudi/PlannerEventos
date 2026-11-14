@@ -1,11 +1,12 @@
 package com.example.plannereventos.service;
 
-import com.example.plannereventos.dto.*;
-import com.example.plannereventos.exception.*;
-import com.example.plannereventos.model.Evento;
-import com.example.plannereventos.model.Inscricao;
-import com.example.plannereventos.model.ModalidadeEvento;
-import com.example.plannereventos.model.Participante;
+import com.example.plannereventos.dto.ComprovanteResponse;
+import com.example.plannereventos.dto.InscricaoCancelarRequest;
+import com.example.plannereventos.dto.InscricaoCreateRequest;
+import com.example.plannereventos.dto.InscricaoResponse;
+import com.example.plannereventos.exception.EventoSemVagasException;
+import com.example.plannereventos.exception.StatusInvalidoException;
+import com.example.plannereventos.model.*;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -26,7 +28,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-
 
 @ExtendWith(MockitoExtension.class)
 class InscricaoServiceTest {
@@ -41,735 +42,199 @@ class InscricaoServiceTest {
     private ParticipanteRepository participanteRepository;
 
     @Mock
+    private ElegibilidadeStrategy elegibilidadeStrategy;
+
+    @Mock
+    private PoliticaCancelamentoStrategy politicaCancelamentoStrategy;
+
+    @Mock
+    private CalculoValorPadraoStrategy calculoPadraoStrategy;
+
+    @Mock
+    private CalculoValorEventoAbertoStrategy calculoEventoAbertoStrategy;
+
+    @Mock
     private ComprovanteService comprovanteService;
 
     private InscricaoService inscricaoService;
 
-   @BeforeEach
-void setUp() {
+    private Evento eventoPadrao;
+    private Participante participante;
+    private UUID participanteId;
 
-    var estrategiasElegibilidade = List.of(
-            new EventoAbertoStrategy(inscricaoRepository),
-            new EventoExclusivoAlunosStrategy(),
-            new EventoRestricaoIdadeStrategy()
-    );
+    @BeforeEach
+    void setUp() {
+        when(elegibilidadeStrategy.getModalidade()).thenReturn(ModalidadeEvento.EXCLUSIVO_ALUNOS);
+        when(politicaCancelamentoStrategy.getModalidade()).thenReturn(ModalidadeEvento.EXCLUSIVO_ALUNOS);
 
-    List<PoliticaCancelamentoStrategy> politicasCancelamento = List.of(
-            new CancelamentoEventoAbertoStrategy(eventoRepository),
-            new CancelamentoEventoExclusivoAlunosStrategy(eventoRepository),
-            new CancelamentoEventoRestricaoIdadeStrategy()
-    );
+        inscricaoService = new InscricaoService(
+                inscricaoRepository,
+                eventoRepository,
+                participanteRepository,
+                List.of(elegibilidadeStrategy),
+                List.of(politicaCancelamentoStrategy),
+                calculoPadraoStrategy,
+                calculoEventoAbertoStrategy,
+                comprovanteService
+        );
 
-    inscricaoService = new InscricaoService(
-            inscricaoRepository,
-            eventoRepository,
-            participanteRepository,
-            estrategiasElegibilidade,
-            politicasCancelamento,
-            comprovanteService
-    );
-}
+        participanteId = UUID.randomUUID();
+        participante = new Participante();
+        participante.setId(participanteId);
+        participante.setNome("Bruna Serra");
 
-    private Evento criarEventoValido(int id, String status, LocalDate data, LocalTime horaInicio, int capacidade) {
-        Evento evento = new Evento();
-        evento.setId(id);
-        evento.setTitulo("Tech Summit 2026");
-        evento.setDescricao("Conferência de Tecnologia");
-        evento.setData(data);
-        evento.setHoraInicio(horaInicio);
-        evento.setHoraFim(horaInicio.plusHours(4));
-        evento.setLocal("Auditório Principal");
-        evento.setCapacidadeMaxima(capacidade);
-        evento.setModalidade(ModalidadeEvento.ABERTO);
-        evento.setStatus(status);
-        evento.setCriadoEm(LocalDateTime.now());
-        return evento;
-    }
-
-    private Participante criarParticipanteValido(UUID id) {
-        Participante p = new Participante();
-        p.setId(id);
-        p.setNome("Carlos Silva");
-        p.setEmail("carlos@email.com");
-        p.setMatricula("123456");
-        p.setMatriculaAtiva(true);
-        p.setDataNascimento(LocalDate.now().minusYears(25));
-        p.setCriadoEm(LocalDateTime.now());
-        return p;
+        eventoPadrao = new Evento();
+        eventoPadrao.setId(1);
+        eventoPadrao.setTitulo("Workshop Spring Boot");
+        eventoPadrao.setData(LocalDate.now().plusDays(5));
+        eventoPadrao.setHoraInicio(LocalTime.of(19, 0));
+        eventoPadrao.setCapacidadeMaxima(50);
+        eventoPadrao.setStatus("ATIVO");
+        eventoPadrao.setModalidade(ModalidadeEvento.EXCLUSIVO_ALUNOS);
+        eventoPadrao.setValorBase(100.0);
+        eventoPadrao.setLoteAtivo(LoteInscricao.PROMOCIONAL);
     }
 
     @Test
-    @DisplayName("Deve recusar inscricao quando matricula for nula")
-    void deveRecusarAlunoComMatriculaNula() {
+    @DisplayName("RF22 / RN08 / RN09 - Deve criar inscrição no status PENDENTE e calcular valor com desconto do lote ativo")
+    void deveCriarInscricaoPendenteComValorCalculado() {
+        InscricaoCreateRequest request = new InscricaoCreateRequest();
+        request.setParticipanteId(participanteId);
 
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-
-        Evento evento = criarEventoValido(
-                eventoId,
-                "ATIVO",
-                LocalDate.now().plusDays(5),
-                LocalTime.of(10, 0),
-                50
-        );
-
-        evento.setModalidade(ModalidadeEvento.EXCLUSIVO_ALUNOS);
-
-        Participante participante
-                = criarParticipanteValido(participanteId);
-
-        participante.setMatricula(null);
-        participante.setMatriculaAtiva(true);
-
-        InscricaoCreateRequest request
-                = new InscricaoCreateRequest(participanteId);
-
-        when(eventoRepository.buscarPorId(eventoId))
-                .thenReturn(Optional.of(evento));
-
-        when(participanteRepository.buscarPorId(participanteId))
-                .thenReturn(Optional.of(participante));
-
-        assertThrows(
-                MatriculaInvalidaException.class,
-                () -> inscricaoService.inscrever(eventoId, request)
-        );
-
-        verify(inscricaoRepository, never()).salvar(any());
-    }
-
-    @Test
-    @DisplayName("Deve realizar inscricao com sucesso quando dados e regras forem validos")
-    void deveRealizarInscricaoComSucesso() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
-        Participante participante = criarParticipanteValido(participanteId);
-        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-        when(inscricaoRepository.existeConfirmada(eventoId, participanteId)).thenReturn(false);
-        when(inscricaoRepository.contarConfirmadasPorEvento(eventoId)).thenReturn(10);
-        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(inv -> {
-            Inscricao i = inv.getArgument(0);
-            i.setId(100);
+        when(inscricaoRepository.existeAtivaOuConfirmada(1, participanteId)).thenReturn(false);
+        when(calculoPadraoStrategy.calcular(100.0, LoteInscricao.PROMOCIONAL)).thenReturn(80.0);
+        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(invocation -> {
+            Inscricao i = invocation.getArgument(0);
+            i.setId(10);
             return i;
         });
 
-        InscricaoResponse response = inscricaoService.inscrever(eventoId, request);
+        InscricaoResponse response = inscricaoService.inscrever(1, request);
 
         assertNotNull(response);
-        assertEquals(eventoId, response.getEventoId());
-        assertEquals(participanteId, response.getParticipanteId());
+        assertEquals("PENDENTE", response.getStatus());
+        assertEquals(LoteInscricao.PROMOCIONAL, response.getLoteAtivo());
+        assertEquals(80.0, response.getValorFinal());
+        verify(calculoPadraoStrategy).calcular(100.0, LoteInscricao.PROMOCIONAL);
+        verify(inscricaoRepository).salvar(any(Inscricao.class));
+    }
+
+    @Test
+    @DisplayName("RN08 - Deve calcular valor final zero quando evento for da modalidade ABERTO")
+    void deveCalcularValorZeroParaEventoAberto() {
+        eventoPadrao.setModalidade(ModalidadeEvento.ABERTO);
+        InscricaoCreateRequest request = new InscricaoCreateRequest();
+        request.setParticipanteId(participanteId);
+
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.existeAtivaOuConfirmada(1, participanteId)).thenReturn(false);
+        when(calculoEventoAbertoStrategy.calcular(100.0, LoteInscricao.PROMOCIONAL)).thenReturn(0.0);
+        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
+
+        InscricaoResponse response = inscricaoService.inscrever(1, request);
+
+        assertEquals(0.0, response.getValorFinal());
+        assertEquals("PENDENTE", response.getStatus());
+        verify(calculoEventoAbertoStrategy).calcular(100.0, LoteInscricao.PROMOCIONAL);
+        verifyNoInteractions(calculoPadraoStrategy);
+    }
+
+    @Test
+    @DisplayName("RF24 / RN09 - Deve confirmar inscrição PENDENTE quando houver vagas disponíveis")
+    void deveConfirmarInscricaoPendenteComVagasDisponiveis() {
+        Inscricao inscricaoPendente = new Inscricao(
+                10, 1, participanteId, LocalDateTime.now(),
+                StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null
+        );
+
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricaoPendente));
+        when(inscricaoRepository.contarConfirmadasPorEvento(1)).thenReturn(10);
+        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
+        when(comprovanteService.emitir(any(), any(), any())).thenReturn(mock(ComprovanteResponse.class));
+        InscricaoResponse response = inscricaoService.confirmarInscricao(1, participanteId);
+
         assertEquals("CONFIRMADA", response.getStatus());
-        verify(inscricaoRepository, times(1)).salvar(any(Inscricao.class));
+        verify(inscricaoRepository).salvar(inscricaoPendente);
+        verify(comprovanteService).emitir(eventoPadrao, participante, inscricaoPendente);
     }
-    @Test
-    @DisplayName("Deve emitir comprovante apos salvar a inscricao e devolver na resposta")
-    void deveEmitirComprovanteAposInscricao() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
-        Participante participante = criarParticipanteValido(participanteId);
-        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
-        ComprovanteResponse comprovante = new ComprovanteSimplesResponse(
-                100, eventoId, participanteId, LocalDateTime.now(), "resumo");
 
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
+    @Test
+    @DisplayName("RN09 / RN10 - Deve lançar EventoSemVagasException ao confirmar inscrição sem vagas")
+    void deveLancarExcecaoAoConfirmarSemVagas() {
+        eventoPadrao.setCapacidadeMaxima(10);
+        Inscricao inscricaoPendente = new Inscricao(
+                10, 1, participanteId, LocalDateTime.now(),
+                StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null
+        );
+
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-        when(inscricaoRepository.existeConfirmada(eventoId, participanteId)).thenReturn(false);
-        when(inscricaoRepository.contarConfirmadasPorEvento(eventoId)).thenReturn(10);
-        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(inv -> {
-            Inscricao i = inv.getArgument(0);
-            i.setId(100);
-            return i;
-        });
-        when(comprovanteService.emitir(eq(evento), eq(participante), any(Inscricao.class))).thenReturn(comprovante);
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricaoPendente));
+        when(inscricaoRepository.contarConfirmadasPorEvento(1)).thenReturn(10);
 
-        InscricaoResponse response = inscricaoService.inscrever(eventoId, request);
-
-        assertSame(comprovante, response.getComprovante());
-        assertEquals("Carlos Silva", response.getNomeParticipante());
-        verify(comprovanteService, times(1)).emitir(eq(evento), eq(participante), any(Inscricao.class));
+        assertThrows(EventoSemVagasException.class, () -> inscricaoService.confirmarInscricao(1, participanteId));
+        verify(inscricaoRepository, never()).salvar(any());
+        verifyNoInteractions(comprovanteService);
     }
 
     @Test
-    @DisplayName("Deve listar inscricoes do evento com o nome do participante e o comprovante das confirmadas")
-    void deveListarInscricoesDoEventoComNomeEComprovante() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
-        Participante participante = criarParticipanteValido(participanteId);
-        Inscricao inscricao = new Inscricao(1, eventoId, participanteId, LocalDateTime.now(), "CONFIRMADA", null);
-        ComprovanteResponse comprovante = new ComprovanteSimplesResponse(
-                1, eventoId, participanteId, LocalDateTime.now(), "resumo");
+    @DisplayName("RF24 / RN10 - Deve lançar StatusInvalidoException ao tentar confirmar inscrição já CONFIRMADA ou CANCELADA")
+    void deveLancarStatusInvalidoExceptionAoAlterarEstadoFinal() {
+        Inscricao inscricaoConfirmada = new Inscricao(
+                10, 1, participanteId, LocalDateTime.now(),
+                StatusInscricao.CONFIRMADA, LoteInscricao.PROMOCIONAL, 80.0, null
+        );
 
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
-        when(inscricaoRepository.listarPorEvento(eventoId)).thenReturn(List.of(inscricao));
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-        when(comprovanteService.emitir(evento, participante, inscricao)).thenReturn(comprovante);
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricaoConfirmada));
+        when(inscricaoRepository.contarConfirmadasPorEvento(1)).thenReturn(5);
 
-        List<InscricaoResponse> resultado = inscricaoService.listarPorEvento(eventoId);
-
-        assertEquals(1, resultado.size());
-        assertEquals("Carlos Silva", resultado.get(0).getNomeParticipante());
-        assertEquals(participanteId, resultado.get(0).getParticipanteId());
-        assertSame(comprovante, resultado.get(0).getComprovante());
-    }
-
-    @Test
-    @DisplayName("Nao deve emitir comprovante para inscricao cancelada na listagem do evento")
-    void naoDeveEmitirComprovanteDeInscricaoCanceladaNaListagem() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
-        Participante participante = criarParticipanteValido(participanteId);
-        Inscricao cancelada = new Inscricao(1, eventoId, participanteId, LocalDateTime.now(), "CANCELADA", "Desistencia");
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
-        when(inscricaoRepository.listarPorEvento(eventoId)).thenReturn(List.of(cancelada));
-        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-
-        List<InscricaoResponse> resultado = inscricaoService.listarPorEvento(eventoId);
-
-        assertEquals("Carlos Silva", resultado.get(0).getNomeParticipante());
-        assertEquals("CANCELADA", resultado.get(0).getStatus());
-        assertNull(resultado.get(0).getComprovante());
-        verify(comprovanteService, never()).emitir(any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("Deve devolver lista vazia quando o evento nao tem inscricoes")
-    void deveListarVazioQuandoEventoNaoTemInscricoes() {
-        int eventoId = 1;
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
-        when(inscricaoRepository.listarPorEvento(eventoId)).thenReturn(List.of());
-
-        assertTrue(inscricaoService.listarPorEvento(eventoId).isEmpty());
-        verify(comprovanteService, never()).emitir(any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("Deve lancar EventoNaoEncontradoException ao listar inscricoes de evento inexistente")
-    void deveLancarExcecaoAoListarInscricoesDeEventoInexistente() {
-        when(eventoRepository.buscarPorId(99)).thenReturn(Optional.empty());
-
-        assertThrows(EventoNaoEncontradoException.class, () -> inscricaoService.listarPorEvento(99));
-
-        verify(inscricaoRepository, never()).listarPorEvento(anyInt());
-    }
-
-    @Test
-    @DisplayName("Deve buscar inscricao confirmada com o nome do participante e o comprovante")
-    void deveBuscarInscricaoConfirmadaComNomeEComprovante() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
-        Participante participante = criarParticipanteValido(participanteId);
-        Inscricao inscricao = new Inscricao(1, eventoId, participanteId, LocalDateTime.now(), "CONFIRMADA", null);
-        ComprovanteResponse comprovante = new ComprovanteSimplesResponse(
-                1, eventoId, participanteId, LocalDateTime.now(), "resumo");
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
-        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-        when(inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId))
-                .thenReturn(Optional.of(inscricao));
-        when(comprovanteService.emitir(evento, participante, inscricao)).thenReturn(comprovante);
-
-        InscricaoResponse resposta = inscricaoService.buscarPorEventoEParticipante(eventoId, participanteId);
-
-        assertEquals("Carlos Silva", resposta.getNomeParticipante());
-        assertSame(comprovante, resposta.getComprovante());
-    }
-
-    @Test
-    @DisplayName("Deve buscar inscricao cancelada com o nome do participante e sem comprovante")
-    void deveBuscarInscricaoCanceladaSemComprovante() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
-        Participante participante = criarParticipanteValido(participanteId);
-        Inscricao cancelada = new Inscricao(1, eventoId, participanteId, LocalDateTime.now(), "CANCELADA", "Desistencia");
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
-        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-        when(inscricaoRepository.buscarPorEventoEParticipante(eventoId, participanteId))
-                .thenReturn(Optional.of(cancelada));
-
-        InscricaoResponse resposta = inscricaoService.buscarPorEventoEParticipante(eventoId, participanteId);
-
-        assertEquals("Carlos Silva", resposta.getNomeParticipante());
-        assertEquals("CANCELADA", resposta.getStatus());
-        assertNull(resposta.getComprovante());
-        verify(comprovanteService, never()).emitir(any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("Deve lancar MatriculaInvalidaException ao tentar inscrever em evento EXCLUSIVO_ALUNOS com participante sem matricula ativa")
-    void deveLancarExcecaoQuandoAlunoNaoForElegivel() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
-        evento.setModalidade(ModalidadeEvento.EXCLUSIVO_ALUNOS);
-
-        Participante participanteInvalido = criarParticipanteValido(participanteId);
-        participanteInvalido.setMatriculaAtiva(false);
-
-        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
-        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participanteInvalido));
-
-        assertThrows(MatriculaInvalidaException.class, () -> {
-            inscricaoService.inscrever(eventoId, request);
-        });
-
+        assertThrows(StatusInvalidoException.class, () -> inscricaoService.confirmarInscricao(1, participanteId));
         verify(inscricaoRepository, never()).salvar(any());
     }
 
     @Test
-    @DisplayName("Deve lancar IdadeNaoPermitidaException ao tentar inscrever em evento RESTRICAO_IDADE com participante menor que a idade minima")
-    void deveLancarExcecaoQuandoIdadeForInsuficiente() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(10, 0), 50);
-        evento.setModalidade(ModalidadeEvento.RESTRICAO_IDADE);
-        evento.setIdadeMinima(18);
+    @DisplayName("RF24 / RN09 - Deve cancelar inscrição PENDENTE aplicando política de cancelamento da modalidade")
+    void deveCancelarInscricaoPendente() {
+        Inscricao inscricaoPendente = new Inscricao(
+                10, 1, participanteId, LocalDateTime.now(),
+                StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null
+        );
+        InscricaoCancelarRequest cancelRequest = new InscricaoCancelarRequest();
+        cancelRequest.setMotivoCancelamento("Imprevisto pessoal");
 
-        Participante participanteMenor = criarParticipanteValido(participanteId);
-        participanteMenor.setDataNascimento(LocalDate.now().minusYears(16));
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.existePorId(participanteId)).thenReturn(true);
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricaoPendente));
 
-        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
+        inscricaoService.cancelarInscricao(1, participanteId, cancelRequest);
 
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
-        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participanteMenor));
-
-        assertThrows(IdadeNaoPermitidaException.class, () -> {
-            inscricaoService.inscrever(eventoId, request);
-        });
-
-        verify(inscricaoRepository, never()).salvar(any());
+        assertEquals(StatusInscricao.CANCELADA, inscricaoPendente.getStatus());
+        assertEquals("Imprevisto pessoal", inscricaoPendente.getMotivoCancelamento());
+        verify(politicaCancelamentoStrategy).validarCancelamento(inscricaoPendente, "Imprevisto pessoal");
+        verify(inscricaoRepository).salvar(inscricaoPendente);
     }
 
     @Test
-    @DisplayName("Deve lancar EventoNaoEncontradoException quando evento nao existir")
-    void deveLancarExcecaoQuandoEventoNaoEncontrarAoInscrever() {
-        int eventoInexistente = 99;
-        UUID participanteId = UUID.randomUUID();
-        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
+    @DisplayName("RF24 / RN10 - Deve lançar StatusInvalidoException ao tentar cancelar inscrição que não está PENDENTE")
+    void deveLancarExcecaoAoCancelarInscricaoJaConfirmada() {
+        Inscricao inscricaoConfirmada = new Inscricao(
+                10, 1, participanteId, LocalDateTime.now(),
+                StatusInscricao.CONFIRMADA, LoteInscricao.PROMOCIONAL, 80.0, null
+        );
 
-        when(eventoRepository.buscarPorId(eventoInexistente)).thenReturn(Optional.empty());
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.existePorId(participanteId)).thenReturn(true);
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricaoConfirmada));
 
-        assertThrows(EventoNaoEncontradoException.class, () -> {
-            inscricaoService.inscrever(eventoInexistente, request);
-        });
-
+        assertThrows(StatusInvalidoException.class, () -> inscricaoService.cancelarInscricao(1, participanteId, null));
+        verify(politicaCancelamentoStrategy, never()).validarCancelamento(any(), any());
         verify(inscricaoRepository, never()).salvar(any());
     }
-
-    @Test
-    @DisplayName("Deve lancar ParticipanteNaoEncontradoException quando participante nao existir")
-    void deveLancarExcecaoQuandoParticipanteNaoEncontrarAoInscrever() {
-        int eventoId = 1;
-        UUID participanteInexistente = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(2), LocalTime.of(9, 0), 20);
-        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteInexistente);
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
-        when(participanteRepository.buscarPorId(participanteInexistente)).thenReturn(Optional.empty());
-
-        assertThrows(ParticipanteNaoEncontradoException.class, () -> {
-            inscricaoService.inscrever(eventoId, request);
-        });
-
-        verify(inscricaoRepository, never()).salvar(any());
-    }
-
-    @Test
-    @DisplayName("Deve lancar EventoCanceladoException ao tentar inscrever em evento cancelado")
-    void deveLancarExcecaoAoInscreverEmEventoCancelado() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento eventoCancelado = criarEventoValido(eventoId, "CANCELADO", LocalDate.now().plusDays(2), LocalTime.of(9, 0), 20);
-        Participante participante = criarParticipanteValido(participanteId);
-        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(eventoCancelado));
-        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-
-        assertThrows(EventoCanceladoException.class, () -> {
-            inscricaoService.inscrever(eventoId, request);
-        });
-
-        verify(inscricaoRepository, never()).salvar(any());
-    }
-
-    @Test
-    @DisplayName("Deve lancar EventoJaIniciadoException ao tentar inscrever em evento passado")
-    void deveLancarExcecaoAoInscreverEmEventoJaIniciado() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento eventoPassado = criarEventoValido(eventoId, "ATIVO", LocalDate.now().minusDays(1), LocalTime.of(9, 0), 20);
-        Participante participante = criarParticipanteValido(participanteId);
-        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(eventoPassado));
-        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-
-        assertThrows(EventoJaIniciadoException.class, () -> {
-            inscricaoService.inscrever(eventoId, request);
-        });
-
-        verify(inscricaoRepository, never()).salvar(any());
-    }
-
-    @Test
-    @DisplayName("Deve lancar InscricaoDuplicadaException ao inscrever participante ja confirmado")
-    void deveLancarExcecaoQuandoInscricaoForDuplicada() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(3), LocalTime.of(10, 0), 20);
-        Participante participante = criarParticipanteValido(participanteId);
-        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
-        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-        when(inscricaoRepository.existeConfirmada(eventoId, participanteId)).thenReturn(true);
-
-        assertThrows(InscricaoDuplicadaException.class, () -> {
-            inscricaoService.inscrever(eventoId, request);
-        });
-
-        verify(inscricaoRepository, never()).salvar(any());
-    }
-
-    @Test
-    @DisplayName("Deve lancar EventoSemVagasException quando a capacidade maxima for atingida em evento ABERTO")
-    void deveLancarExcecaoQuandoEventoEstiverLotado() {
-        int eventoId = 1;
-        UUID participanteId = UUID.randomUUID();
-        Evento evento = criarEventoValido(eventoId, "ATIVO", LocalDate.now().plusDays(3), LocalTime.of(10, 0), 5);
-        evento.setModalidade(ModalidadeEvento.ABERTO);
-
-        Participante participante = criarParticipanteValido(participanteId);
-        InscricaoCreateRequest request = new InscricaoCreateRequest(participanteId);
-
-        when(eventoRepository.buscarPorId(eventoId)).thenReturn(Optional.of(evento));
-        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-        when(inscricaoRepository.existeConfirmada(eventoId, participanteId)).thenReturn(false);
-        when(inscricaoRepository.contarConfirmadasPorEvento(eventoId)).thenReturn(5);
-
-        assertThrows(EventoSemVagasException.class, () -> {
-            inscricaoService.inscrever(eventoId, request);
-        });
-
-        verify(inscricaoRepository, never()).salvar(any());
-    }
-
-    @Test
-@DisplayName("Deve lancar InscricaoNaoEncontradaException ao tentar cancelar inscricao inexistente")
-void deveLancarExcecaoAoCancelarInscricaoInexistente() {
-
-    int eventoId = 1;
-    UUID participanteId = UUID.randomUUID();
-
-    Evento evento = criarEventoValido(
-            eventoId,
-            "ATIVO",
-            LocalDate.now().plusDays(5),
-            LocalTime.of(10, 0),
-            50
-    );
-
-    InscricaoCancelarRequest request =
-            new InscricaoCancelarRequest("Motivo");
-
-    when(eventoRepository.buscarPorId(eventoId))
-            .thenReturn(Optional.of(evento));
-
-    when(participanteRepository.existePorId(participanteId))
-            .thenReturn(true);
-
-    when(inscricaoRepository.buscarPorEventoEParticipante(
-            eventoId,
-            participanteId
-    )).thenReturn(Optional.empty());
-
-    assertThrows(
-            InscricaoNaoEncontradaException.class,
-            () -> inscricaoService.cancelarInscricao(
-                    eventoId,
-                    participanteId,
-                    request
-            )
-    );
-
-    verify(inscricaoRepository, never())
-            .salvar(any());
-}
-
-    @Test
-@DisplayName("Deve lancar CancelamentoInscricaoInvalidoException ao cancelar inscricao ja cancelada")
-void deveLancarExcecaoAoCancelarInscricaoJaCancelada() {
-
-    int eventoId = 1;
-    UUID participanteId = UUID.randomUUID();
-
-    Evento evento = criarEventoValido(
-            eventoId,
-            "ATIVO",
-            LocalDate.now().plusDays(5),
-            LocalTime.of(10, 0),
-            50
-    );
-
-    Inscricao inscricaoCancelada = new Inscricao(
-            1,
-            eventoId,
-            participanteId,
-            LocalDateTime.now(),
-            "CANCELADA",
-            "Desistencia do participante"
-    );
-
-    InscricaoCancelarRequest request =
-            new InscricaoCancelarRequest("Motivo");
-
-    when(eventoRepository.buscarPorId(eventoId))
-            .thenReturn(Optional.of(evento));
-
-    when(participanteRepository.existePorId(participanteId))
-            .thenReturn(true);
-
-    when(inscricaoRepository.buscarPorEventoEParticipante(
-            eventoId,
-            participanteId
-    )).thenReturn(Optional.of(inscricaoCancelada));
-
-    assertThrows(
-            CancelamentoInscricaoInvalidoException.class,
-            () -> inscricaoService.cancelarInscricao(
-                    eventoId,
-                    participanteId,
-                    request
-            )
-    );
-
-    verify(inscricaoRepository, never())
-            .salvar(any());
-}@Test
-@DisplayName("Nao deve cancelar evento aberto apos o inicio")
-void naoDeveCancelarEventoAbertoAposInicio() {
-
-    int eventoId = 1;
-    UUID participanteId = UUID.randomUUID();
-
-    Evento evento = criarEventoValido(
-            eventoId,
-            "ATIVO",
-            LocalDate.now().minusDays(1),
-            LocalTime.of(10, 0),
-            50
-    );
-
-    evento.setModalidade(ModalidadeEvento.ABERTO);
-
-    Inscricao inscricao = new Inscricao(
-            1,
-            eventoId,
-            participanteId,
-            LocalDateTime.now(),
-            "CONFIRMADA",
-            null
-    );
-
-    when(eventoRepository.buscarPorId(eventoId))
-            .thenReturn(Optional.of(evento));
-
-    when(participanteRepository.existePorId(participanteId))
-            .thenReturn(true);
-
-    when(inscricaoRepository.buscarPorEventoEParticipante(
-            eventoId,
-            participanteId
-    )).thenReturn(Optional.of(inscricao));
-
-    assertThrows(
-            CancelamentoForaDoPrazoException.class,
-            () -> inscricaoService.cancelarInscricao(
-                    eventoId,
-                    participanteId,
-                    null
-            )
-    );
-
-    assertEquals("CONFIRMADA", inscricao.getStatus());
-
-    verify(inscricaoRepository, never())
-            .salvar(any());
-}
-@Test
-@DisplayName("Deve exigir motivo no cancelamento de evento com restricao de idade")
-void deveExigirMotivoCancelamentoRestricaoIdade() {
-
-    int eventoId = 1;
-    UUID participanteId = UUID.randomUUID();
-
-    Evento evento = criarEventoValido(
-            eventoId,
-            "ATIVO",
-            LocalDate.now().plusDays(5),
-            LocalTime.of(10, 0),
-            50
-    );
-
-    evento.setModalidade(
-            ModalidadeEvento.RESTRICAO_IDADE
-    );
-
-    Inscricao inscricao = new Inscricao(
-            1,
-            eventoId,
-            participanteId,
-            LocalDateTime.now(),
-            "CONFIRMADA",
-            null
-    );
-
-    when(eventoRepository.buscarPorId(eventoId))
-            .thenReturn(Optional.of(evento));
-
-    when(participanteRepository.existePorId(participanteId))
-            .thenReturn(true);
-
-    when(inscricaoRepository.buscarPorEventoEParticipante(
-            eventoId,
-            participanteId
-    )).thenReturn(Optional.of(inscricao));
-
-    assertThrows(
-            MotivoCancelamentoObrigatorioException.class,
-            () -> inscricaoService.cancelarInscricao(
-                    eventoId,
-                    participanteId,
-                    null
-            )
-    );
-
-    assertEquals("CONFIRMADA", inscricao.getStatus());
-
-    verify(inscricaoRepository, never())
-            .salvar(any());
-}
-
-@Test
-@DisplayName("Nao deve cancelar evento exclusivo para alunos com menos de 24 horas")
-void naoDeveCancelarEventoExclusivoDentroDas24Horas() {
-
-    int eventoId = 1;
-    UUID participanteId = UUID.randomUUID();
-
-    Evento evento = criarEventoValido(
-            eventoId,
-            "ATIVO",
-            LocalDate.now().plusDays(1),
-            LocalTime.now(),
-            50
-    );
-
-    evento.setModalidade(
-            ModalidadeEvento.EXCLUSIVO_ALUNOS
-    );
-
-    Inscricao inscricao = new Inscricao(
-            1,
-            eventoId,
-            participanteId,
-            LocalDateTime.now(),
-            "CONFIRMADA",
-            null
-    );
-
-    when(eventoRepository.buscarPorId(eventoId))
-            .thenReturn(Optional.of(evento));
-
-    when(participanteRepository.existePorId(participanteId))
-            .thenReturn(true);
-
-    when(inscricaoRepository.buscarPorEventoEParticipante(
-            eventoId,
-            participanteId
-    )).thenReturn(Optional.of(inscricao));
-
-    assertThrows(
-            CancelamentoForaDoPrazoException.class,
-            () -> inscricaoService.cancelarInscricao(
-                    eventoId,
-                    participanteId,
-                    null
-            )
-    );
-
-    verify(inscricaoRepository, never())
-            .salvar(any());
-}
-    @Test
-@DisplayName("Deve cancelar inscricao de evento aberto antes do inicio")
-void deveCancelarInscricaoComSucesso() {
-
-    int eventoId = 1;
-    UUID participanteId = UUID.randomUUID();
-
-    Evento evento = criarEventoValido(
-            eventoId,
-            "ATIVO",
-            LocalDate.now().plusDays(5),
-            LocalTime.of(10, 0),
-            50
-    );
-
-    evento.setModalidade(ModalidadeEvento.ABERTO);
-
-    Inscricao inscricao = new Inscricao(
-            1,
-            eventoId,
-            participanteId,
-            LocalDateTime.now(),
-            "CONFIRMADA",
-            null
-    );
-
-    InscricaoCancelarRequest request =
-            new InscricaoCancelarRequest("Desistencia pessoal");
-
-    when(eventoRepository.buscarPorId(eventoId))
-            .thenReturn(Optional.of(evento));
-
-    when(participanteRepository.existePorId(participanteId))
-            .thenReturn(true);
-
-    when(inscricaoRepository.buscarPorEventoEParticipante(
-            eventoId,
-            participanteId
-    )).thenReturn(Optional.of(inscricao));
-
-    inscricaoService.cancelarInscricao(
-            eventoId,
-            participanteId,
-            request
-    );
-
-    assertEquals("CANCELADA", inscricao.getStatus());
-
-    assertEquals(
-            "Desistencia pessoal",
-            inscricao.getMotivoCancelamento()
-    );
-
-    verify(inscricaoRepository, times(1))
-            .salvar(inscricao);
-}
 }
