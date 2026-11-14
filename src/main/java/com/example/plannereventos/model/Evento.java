@@ -27,23 +27,6 @@ public class Evento {
     public Evento() {
     }
 
-    public Evento(int idEvento,
-                  String tituloEvento,
-                  String descricaoEvento,
-                  LocalDate dataEvento,
-                  LocalTime inicio,
-                  LocalTime fim,
-                  String localEvento,
-                  int capacidade,
-                  String statusEvento,
-                  LocalDateTime dataCriacao,
-                  ModalidadeEvento modalidadeEvento,
-                  Integer idadeMin) {
-        this(idEvento, tituloEvento, descricaoEvento, dataEvento, inicio, fim,
-                localEvento, capacidade, statusEvento, dataCriacao,
-                modalidadeEvento, idadeMin, 0.0, LoteInscricao.LOTE_2);
-    }
-
     public Evento(int id,
                   String titulo,
                   String descricao,
