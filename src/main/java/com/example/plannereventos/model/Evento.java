@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class Evento {
+
     private int id;
     private String titulo;
     private String descricao;
@@ -26,18 +27,9 @@ public class Evento {
     public Evento() {
     }
 
-    public Evento(int id,
-                  String titulo,
-                  String descricao,
-                  LocalDate data,
-                  LocalTime horaInicio,
-                  LocalTime horaFim,
-                  String local,
-                  int capacidadeMaxima,
-                  String status,
-                  LocalDateTime criadoEm,
-                  ModalidadeEvento modalidade,
-                  Integer idadeMinima) {
+    public Evento(int id, String titulo, String descricao, LocalDate data, LocalTime horaInicio,
+                  LocalTime horaFim, String local, int capacidadeMaxima, String status,
+                  LocalDateTime criadoEm, ModalidadeEvento modalidade, Integer idadeMinima) {
         this(id, titulo, descricao, data, horaInicio, horaFim, local,
                 capacidadeMaxima, status, criadoEm, modalidade, idadeMinima,
                 0.0, LoteInscricao.LOTE_2);
