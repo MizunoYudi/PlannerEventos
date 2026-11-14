@@ -55,7 +55,7 @@ public class InscricaoRepository {
                 .toList();
 
         return doParticipante.stream()
-                .filter(i -> "CONFIRMADA".equalsIgnoreCase(i.getStatus()))
+                .filter(i -> i.getStatus() == StatusInscricao.CONFIRMADA)
                 .findFirst()
                 .or(() -> doParticipante.stream().max(Comparator.comparingInt(Inscricao::getId)));
     }
