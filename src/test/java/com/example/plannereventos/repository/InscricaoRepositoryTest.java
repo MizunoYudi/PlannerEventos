@@ -1,6 +1,8 @@
 package com.example.plannereventos.repository;
 
 import com.example.plannereventos.model.Inscricao;
+import com.example.plannereventos.model.LoteInscricao;
+import com.example.plannereventos.model.StatusInscricao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,14 +25,23 @@ class InscricaoRepositoryTest {
         participanteId = UUID.randomUUID();
     }
 
-    private Inscricao salvar(String status) {
-        return repository.salvar(new Inscricao(0, EVENTO_ID, participanteId, LocalDateTime.now(), status, null));
+    private Inscricao salvar(StatusInscricao status) {
+        return repository.salvar(new Inscricao(
+                0,
+                EVENTO_ID,
+                participanteId,
+                LocalDateTime.now(),
+                status,
+                LoteInscricao.LOTE_1,
+                100.0,
+                null
+        ));
     }
 
     @Test
     @DisplayName("Deve devolver a unica inscricao do participante no evento")
     void deveBuscarUnicaInscricao() {
-        Inscricao salva = salvar("CONFIRMADA");
+        Inscricao salva = salvar(StatusInscricao.CONFIRMADA);
 
         assertEquals(salva.getId(), repository.buscarPorEventoEParticipante(EVENTO_ID, participanteId).get().getId());
     }
@@ -38,20 +49,20 @@ class InscricaoRepositoryTest {
     @Test
     @DisplayName("Deve preferir a inscricao confirmada quando o participante cancelou e se inscreveu de novo")
     void devePreferirInscricaoConfirmada() {
-        salvar("CANCELADA");
-        Inscricao confirmada = salvar("CONFIRMADA");
+        salvar(StatusInscricao.CANCELADA);
+        Inscricao confirmada = salvar(StatusInscricao.CONFIRMADA);
 
         Inscricao encontrada = repository.buscarPorEventoEParticipante(EVENTO_ID, participanteId).get();
 
         assertEquals(confirmada.getId(), encontrada.getId());
-        assertEquals("CONFIRMADA", encontrada.getStatus());
+        assertEquals(StatusInscricao.CONFIRMADA, encontrada.getStatus());
     }
 
     @Test
     @DisplayName("Deve devolver a inscricao cancelada mais recente quando nao houver confirmada")
     void deveDevolverCanceladaMaisRecenteQuandoNaoHouverConfirmada() {
-        salvar("CANCELADA");
-        Inscricao maisRecente = salvar("CANCELADA");
+        salvar(StatusInscricao.CANCELADA);
+        Inscricao maisRecente = salvar(StatusInscricao.CANCELADA);
 
         assertEquals(maisRecente.getId(), repository.buscarPorEventoEParticipante(EVENTO_ID, participanteId).get().getId());
     }
@@ -66,7 +77,7 @@ class InscricaoRepositoryTest {
     @Test
     @DisplayName("Nao deve misturar inscricoes de outro evento")
     void naoDeveMisturarEventos() {
-        salvar("CONFIRMADA");
+        salvar(StatusInscricao.CONFIRMADA);
 
         assertTrue(repository.buscarPorEventoEParticipante(2, participanteId).isEmpty());
     }
