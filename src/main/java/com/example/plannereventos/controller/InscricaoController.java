@@ -42,17 +42,21 @@ public class InscricaoController {
         return ResponseEntity.ok(inscricaoService.buscarPorEventoEParticipante(eventoId, participanteId));
     }
 
+    @PatchMapping("/{participanteId}/confirmar")
+    public ResponseEntity<InscricaoResponse> confirmarInscricao(
+            @PathVariable int eventoId,
+            @PathVariable UUID participanteId) {
+        InscricaoResponse response = inscricaoService.confirmarInscricao(eventoId, participanteId);
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping("/{participanteId}")
     public ResponseEntity<Void> cancelarInscricao(
             @PathVariable int eventoId,
             @PathVariable UUID participanteId,
             @Valid @RequestBody(required = false) InscricaoCancelarRequest request) {
 
-        inscricaoService.cancelarInscricao(
-                eventoId,
-                participanteId,
-                request);
-
+        inscricaoService.cancelarInscricao(eventoId, participanteId, request);
         return ResponseEntity.noContent().build();
     }
 }

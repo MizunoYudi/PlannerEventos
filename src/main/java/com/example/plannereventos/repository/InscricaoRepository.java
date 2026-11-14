@@ -1,6 +1,7 @@
 package com.example.plannereventos.repository;
 
 import com.example.plannereventos.model.Inscricao;
+import com.example.plannereventos.model.StatusInscricao;
 import org.springframework.stereotype.Repository;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +43,7 @@ public class InscricaoRepository {
 
     public int contarConfirmadasPorEvento(int idEvento) {
         return (int) storage.values().stream()
-                .filter(i -> i.getIdEvento() == idEvento && "CONFIRMADA".equalsIgnoreCase(i.getStatus()))
+                .filter(i -> i.getIdEvento() == idEvento && i.getStatus() == StatusInscricao.CONFIRMADA)
                 .count();
     }
 
@@ -54,24 +55,24 @@ public class InscricaoRepository {
                 .toList();
 
         return doParticipante.stream()
-                .filter(i -> "CONFIRMADA".equalsIgnoreCase(i.getStatus()))
+                .filter(i -> i.getStatus() == StatusInscricao.CONFIRMADA)
                 .findFirst()
                 .or(() -> doParticipante.stream().max(Comparator.comparingInt(Inscricao::getId)));
     }
 
-    public boolean existeConfirmada(int eventoId, UUID participanteId) {
+    public boolean existeAtivaOuConfirmada(int eventoId, UUID participanteId) {
         if (participanteId == null) return false;
         return storage.values().stream()
                 .anyMatch(i -> i.getIdEvento() == eventoId
                         && participanteId.equals(i.getParticipanteId())
-                        && "CONFIRMADA".equalsIgnoreCase(i.getStatus()));
+                        && (i.getStatus() == StatusInscricao.PENDENTE || i.getStatus() == StatusInscricao.CONFIRMADA));
     }
 
     public void cancelarTodasPorEvento(int eventoId, String motivo) {
         storage.values().stream()
-                .filter(i -> i.getIdEvento() == eventoId && "CONFIRMADA".equalsIgnoreCase(i.getStatus()))
+                .filter(i -> i.getIdEvento() == eventoId && i.getStatus() != StatusInscricao.CANCELADA)
                 .forEach(i -> {
-                    i.setStatus("CANCELADA");
+                    i.setStatus(StatusInscricao.CANCELADA);
                     i.setMotivoCancelamento(motivo);
                 });
     }
