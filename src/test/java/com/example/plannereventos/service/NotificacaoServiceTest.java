@@ -1,8 +1,6 @@
 package com.example.plannereventos.service;
 
-import com.example.plannereventos.model.Evento;
-import com.example.plannereventos.model.Inscricao;
-import com.example.plannereventos.model.Participante;
+import com.example.plannereventos.model.*;
 import com.example.plannereventos.notificacao.Notificador;
 import com.example.plannereventos.notificacao.NotificadorSMS;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +45,8 @@ class NotificacaoServiceTest {
         evento.setId(1);
         evento.setTitulo("Semana de Tecnologia");
 
-        inscricao = new Inscricao(10, 1, participanteId, LocalDateTime.now(), "CONFIRMADA", null);
+        inscricao = new Inscricao(10, 1, participanteId, LocalDateTime.now(),
+                StatusInscricao.CONFIRMADA, LoteInscricao.PROMOCIONAL, 80.0, null);
     }
 
     @Test

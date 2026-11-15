@@ -37,10 +37,10 @@ public class InscricaoService {
             ParticipanteRepository participanteRepository,
             List<ElegibilidadeStrategy> listaEstrategias,
             List<PoliticaCancelamentoStrategy> listaPoliticasCancelamento,
-            ComprovanteService comprovanteService,
-            NotificacaoService notificacaoService,
             CalculoValorPadraoStrategy calculoPadraoStrategy,
-            CalculoValorEventoAbertoStrategy calculoEventoAbertoStrategy) {
+            CalculoValorEventoAbertoStrategy calculoEventoAbertoStrategy,
+            ComprovanteService comprovanteService,
+            NotificacaoService notificacaoService) {
 
         this.inscricaoRepository = inscricaoRepository;
         this.eventoRepository = eventoRepository;

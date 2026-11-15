@@ -7,10 +7,14 @@ import com.example.plannereventos.dto.InscricaoResponse;
 import com.example.plannereventos.exception.EventoSemVagasException;
 import com.example.plannereventos.exception.StatusInvalidoException;
 import com.example.plannereventos.model.*;
+import com.example.plannereventos.notificacao.Notificador;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
-import com.example.plannereventos.strategy.*;
+import com.example.plannereventos.strategy.CalculoValorEventoAbertoStrategy;
+import com.example.plannereventos.strategy.CalculoValorPadraoStrategy;
+import com.example.plannereventos.strategy.ElegibilidadeStrategy;
+import com.example.plannereventos.strategy.PoliticaCancelamentoStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,6 +60,12 @@ class InscricaoServiceTest {
     @Mock
     private ComprovanteService comprovanteService;
 
+    @Mock
+    private Notificador notificadorEmail;
+
+    @Mock
+    private Notificador notificadorSms;
+
     private InscricaoService inscricaoService;
 
     private Evento eventoPadrao;
@@ -75,7 +85,8 @@ class InscricaoServiceTest {
                 List.of(politicaCancelamentoStrategy),
                 calculoPadraoStrategy,
                 calculoEventoAbertoStrategy,
-                comprovanteService
+                comprovanteService,
+                new NotificacaoService(List.of(notificadorEmail, notificadorSms))
         );
 
         participanteId = UUID.randomUUID();
@@ -211,7 +222,7 @@ class InscricaoServiceTest {
         cancelRequest.setMotivoCancelamento("Imprevisto pessoal");
 
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
-        when(participanteRepository.existePorId(participanteId)).thenReturn(true);
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
         when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricaoPendente));
 
         inscricaoService.cancelarInscricao(1, participanteId, cancelRequest);
@@ -231,7 +242,7 @@ class InscricaoServiceTest {
         );
 
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
-        when(participanteRepository.existePorId(participanteId)).thenReturn(true);
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
         when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricaoConfirmada));
 
         assertThrows(StatusInvalidoException.class, () -> inscricaoService.cancelarInscricao(1, participanteId, null));
@@ -276,5 +287,134 @@ class InscricaoServiceTest {
 
         assertNotNull(resultado);
         assertEquals(10, resultado.getId());
+    }
+    private Inscricao criarInscricao(StatusInscricao status) {
+        return new Inscricao(10, 1, participanteId, LocalDateTime.now(),
+                status, LoteInscricao.PROMOCIONAL, 80.0, null);
+    }
+
+    private void prepararConfirmacao(Inscricao inscricao) {
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricao));
+        when(inscricaoRepository.contarConfirmadasPorEvento(1)).thenReturn(10);
+        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
+    }
+
+    private void prepararCancelamento(Inscricao inscricao) {
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricao));
+    }
+
+    private InscricaoCancelarRequest motivo(String texto) {
+        InscricaoCancelarRequest request = new InscricaoCancelarRequest();
+        request.setMotivoCancelamento(texto);
+        return request;
+    }
+
+    @Test
+    @DisplayName("RF25/RF26: deve notificar todos os canais quando a inscricao for confirmada")
+    void deveNotificarTodosOsCanaisAoConfirmarInscricao() {
+        Inscricao inscricao = criarInscricao(StatusInscricao.PENDENTE);
+        prepararConfirmacao(inscricao);
+
+        inscricaoService.confirmarInscricao(1, participanteId);
+
+        assertEquals(StatusInscricao.CONFIRMADA, inscricao.getStatus());
+        verify(notificadorEmail, times(1)).notificar(participante, eventoPadrao, inscricao);
+        verify(notificadorSms, times(1)).notificar(participante, eventoPadrao, inscricao);
+    }
+
+    @Test
+    @DisplayName("RF25/RF26: deve notificar todos os canais quando a inscricao for cancelada")
+    void deveNotificarTodosOsCanaisAoCancelarInscricao() {
+        Inscricao inscricao = criarInscricao(StatusInscricao.PENDENTE);
+        prepararCancelamento(inscricao);
+
+        inscricaoService.cancelarInscricao(1, participanteId, motivo("Imprevisto"));
+
+        assertEquals(StatusInscricao.CANCELADA, inscricao.getStatus());
+        verify(notificadorEmail, times(1)).notificar(participante, eventoPadrao, inscricao);
+        verify(notificadorSms, times(1)).notificar(participante, eventoPadrao, inscricao);
+    }
+
+    @Test
+    @DisplayName("RF25: nao deve notificar ao criar inscricao PENDENTE")
+    void naoDeveNotificarAoCriarInscricaoPendente() {
+        InscricaoCreateRequest request = new InscricaoCreateRequest();
+        request.setParticipanteId(participanteId);
+
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.existeAtivaOuConfirmada(1, participanteId)).thenReturn(false);
+        when(calculoPadraoStrategy.calcular(100.0, LoteInscricao.PROMOCIONAL)).thenReturn(80.0);
+        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
+
+        InscricaoResponse response = inscricaoService.inscrever(1, request);
+
+        assertEquals("PENDENTE", response.getStatus());
+        verifyNoInteractions(notificadorEmail, notificadorSms);
+    }
+
+    @Test
+    @DisplayName("RF25: nao deve notificar quando a confirmacao falhar por falta de vagas")
+    void naoDeveNotificarQuandoConfirmacaoFalharPorFaltaDeVagas() {
+        eventoPadrao.setCapacidadeMaxima(10);
+        Inscricao inscricao = criarInscricao(StatusInscricao.PENDENTE);
+
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricao));
+        when(inscricaoRepository.contarConfirmadasPorEvento(1)).thenReturn(10);
+
+        assertThrows(EventoSemVagasException.class, () -> inscricaoService.confirmarInscricao(1, participanteId));
+
+        assertEquals(StatusInscricao.PENDENTE, inscricao.getStatus());
+        verifyNoInteractions(notificadorEmail, notificadorSms);
+    }
+
+    @Test
+    @DisplayName("RF25: nao deve notificar quando o cancelamento for recusado (inscricao nao PENDENTE)")
+    void naoDeveNotificarQuandoCancelamentoForRecusado() {
+        Inscricao inscricao = criarInscricao(StatusInscricao.CONFIRMADA);
+        prepararCancelamento(inscricao);
+
+        assertThrows(StatusInvalidoException.class,
+                () -> inscricaoService.cancelarInscricao(1, participanteId, motivo("Imprevisto")));
+
+        assertEquals(StatusInscricao.CONFIRMADA, inscricao.getStatus());
+        verifyNoInteractions(notificadorEmail, notificadorSms);
+    }
+
+    @Test
+    @DisplayName("RN11: falha no SMS nao deve impedir a confirmacao nem os demais canais")
+    void deveManterConfirmacaoMesmoComFalhaNoNotificador() {
+        Inscricao inscricao = criarInscricao(StatusInscricao.PENDENTE);
+        prepararConfirmacao(inscricao);
+        doThrow(new IllegalStateException("Servico de SMS indisponivel"))
+                .when(notificadorSms).notificar(any(), any(), any());
+
+        InscricaoResponse response = assertDoesNotThrow(
+                () -> inscricaoService.confirmarInscricao(1, participanteId));
+
+        assertEquals("CONFIRMADA", response.getStatus());
+        verify(inscricaoRepository, times(1)).salvar(inscricao);
+        verify(notificadorEmail, times(1)).notificar(participante, eventoPadrao, inscricao);
+    }
+
+    @Test
+    @DisplayName("RN11: falha no e-mail nao deve reverter o cancelamento")
+    void deveManterCancelamentoMesmoComFalhaNoNotificador() {
+        Inscricao inscricao = criarInscricao(StatusInscricao.PENDENTE);
+        prepararCancelamento(inscricao);
+        doThrow(new IllegalStateException("Servidor de e-mail fora do ar"))
+                .when(notificadorEmail).notificar(any(), any(), any());
+
+        assertDoesNotThrow(() -> inscricaoService.cancelarInscricao(1, participanteId, motivo("Imprevisto")));
+
+        assertEquals(StatusInscricao.CANCELADA, inscricao.getStatus());
+        verify(inscricaoRepository, times(1)).salvar(inscricao);
+        verify(notificadorSms, times(1)).notificar(participante, eventoPadrao, inscricao);
     }
 }
