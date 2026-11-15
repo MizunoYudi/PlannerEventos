@@ -15,7 +15,6 @@ import com.example.plannereventos.repository.ParticipanteRepository;
 import com.example.plannereventos.strategy.ElegibilidadeStrategy;
 import com.example.plannereventos.strategy.PoliticaCancelamentoStrategy;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +35,7 @@ public class InscricaoService {
 
     private final Map<ModalidadeEvento, PoliticaCancelamentoStrategy> politicasCancelamento;
     private final ComprovanteService comprovanteService;
+    private final NotificacaoService notificacaoService;
 
     public InscricaoService(
             InscricaoRepository inscricaoRepository,
@@ -43,7 +43,8 @@ public class InscricaoService {
             ParticipanteRepository participanteRepository,
             List<ElegibilidadeStrategy> listaEstrategias,
             List<PoliticaCancelamentoStrategy> listaPoliticasCancelamento,
-            ComprovanteService comprovanteService) {
+            ComprovanteService comprovanteService,
+            NotificacaoService notificacaoService) {
 
         this.inscricaoRepository = inscricaoRepository;
         this.eventoRepository = eventoRepository;
@@ -59,6 +60,7 @@ public class InscricaoService {
                         PoliticaCancelamentoStrategy::getModalidade,
                         Function.identity()));
         this.comprovanteService = comprovanteService;
+        this.notificacaoService = notificacaoService;
     }
 
     public List<InscricaoResponse> listarPorEvento(int eventoId) {
@@ -182,8 +184,12 @@ public class InscricaoService {
 
         Inscricao inscricaoSalva = inscricaoRepository.salvar(novaInscricao);
         ComprovanteResponse comprovante = comprovanteService.emitir(evento, participante, inscricaoSalva);
+
+        notificacaoService.notificarMudancaDeStatus(participante, evento, inscricaoSalva);
+
         InscricaoResponse response = new InscricaoResponse(inscricaoSalva, comprovante);
         response.setNomeParticipante(participante.getNome());
+
         return response;
     }
 
@@ -194,7 +200,7 @@ public class InscricaoService {
 
         Evento evento = buscarEventoOuFalhar(eventoId);
 
-        validarExistenciaParticipante(participanteId);
+        Participante participante = buscarParticipanteOuFalhar(participanteId);
 
         Inscricao inscricao = inscricaoRepository
                 .buscarPorEventoEParticipante(
@@ -235,6 +241,7 @@ public class InscricaoService {
                         : null);
 
         inscricaoRepository.salvar(inscricao);
+        notificacaoService.notificarMudancaDeStatus(participante, evento, inscricao);
     }
 
     private Evento buscarEventoOuFalhar(
