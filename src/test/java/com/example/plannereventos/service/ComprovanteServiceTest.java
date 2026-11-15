@@ -7,6 +7,7 @@ import com.example.plannereventos.model.Evento;
 import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.model.Participante;
+import com.example.plannereventos.model.StatusInscricao;
 import com.example.plannereventos.strategy.EmissorComprovanteDigitalStrategy;
 import com.example.plannereventos.strategy.EmissorComprovanteSimplesStrategy;
 import com.example.plannereventos.strategy.EmissorComprovanteStrategy;
@@ -45,7 +46,7 @@ class ComprovanteServiceTest {
         inscricao.setIdEvento(1);
         inscricao.setParticipanteId(participante.getId());
         inscricao.setDataCriacao(LocalDateTime.of(2026, 10, 5, 9, 30));
-        inscricao.setStatus("CONFIRMADA");
+        inscricao.setStatus(StatusInscricao.CONFIRMADA);
     }
 
     private Evento criarEvento(ModalidadeEvento modalidade) {

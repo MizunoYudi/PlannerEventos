@@ -1,4 +1,6 @@
 package com.example.plannereventos.model;
+
+import com.example.plannereventos.exception.StatusInvalidoException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 import java.time.LocalDateTime;
@@ -9,65 +11,67 @@ public class Inscricao {
     private int idEvento;
     private UUID participanteId;
     private LocalDateTime dataCriacao;
-    private String status = "CONFIRMADA";
+    private StatusInscricao status = StatusInscricao.PENDENTE;
+    private LoteInscricao loteAtivo;
+    private double valorFinal;
     private String motivoCancelamento;
 
     @JsonCreator
-    public Inscricao(){
+    public Inscricao() {
     }
 
-    public Inscricao(int id, int idEvento, UUID participanteId, LocalDateTime dataCriacao, String status, String motivoCancelamento){
+    public Inscricao(int id, int idEvento, UUID participanteId, LocalDateTime dataCriacao,
+                     StatusInscricao status, LoteInscricao loteAtivo, double valorFinal, String motivoCancelamento) {
         this.id = id;
-        this.dataCriacao = dataCriacao;
         this.idEvento = idEvento;
         this.participanteId = participanteId;
-        this.status = status;
+        this.dataCriacao = dataCriacao;
+        this.status = status != null ? status : StatusInscricao.PENDENTE;
+        this.loteAtivo = loteAtivo;
+        this.valorFinal = valorFinal;
         this.motivoCancelamento = motivoCancelamento;
     }
 
-    public LocalDateTime getDataCriacao() {
-        return dataCriacao;
+    public void confirmar() {
+        validarTransicaoPermitida();
+        this.status = StatusInscricao.CONFIRMADA;
     }
 
-    public int getId() {
-        return id;
+    public void cancelar(String motivo) {
+        validarTransicaoPermitida();
+        this.status = StatusInscricao.CANCELADA;
+        this.motivoCancelamento = (motivo != null && !motivo.isBlank()) ? motivo.trim() : null;
     }
 
-    public int getIdEvento() {
-        return idEvento;
+    private void validarTransicaoPermitida() {
+        if (this.status != StatusInscricao.PENDENTE) {
+            throw new StatusInvalidoException(
+                    "Inscrição no status " + this.status + " não pode sofrer alteração de estado."
+            );
+        }
     }
 
-    public UUID getParticipanteId() {
-        return participanteId;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setDataCriacao(LocalDateTime dataCriacao) {
-        this.dataCriacao = dataCriacao;
-    }
-
+    public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
-    public void setIdEvento(int idEvento) {
-        this.idEvento = idEvento;
-    }
+    public int getIdEvento() { return idEvento; }
+    public void setIdEvento(int idEvento) { this.idEvento = idEvento; }
 
-    public void setParticipanteId(UUID participanteId) {
-        this.participanteId = participanteId;
-    }
+    public UUID getParticipanteId() { return participanteId; }
+    public void setParticipanteId(UUID participanteId) { this.participanteId = participanteId; }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public LocalDateTime getDataCriacao() { return dataCriacao; }
+    public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
 
-    public String getMotivoCancelamento() {
-        return motivoCancelamento;
-    }
+    public StatusInscricao getStatus() { return status; }
+    public void setStatus(StatusInscricao status) { this.status = status; }
 
-    public void setMotivoCancelamento(String motivoCancelamento) {
-        this.motivoCancelamento = motivoCancelamento;
-    }
+    public LoteInscricao getLoteAtivo() { return loteAtivo; }
+    public void setLoteAtivo(LoteInscricao loteAtivo) { this.loteAtivo = loteAtivo; }
+
+    public double getValorFinal() { return valorFinal; }
+    public void setValorFinal(double valorFinal) { this.valorFinal = valorFinal; }
+
+    public String getMotivoCancelamento() { return motivoCancelamento; }
+    public void setMotivoCancelamento(String motivoCancelamento) { this.motivoCancelamento = motivoCancelamento; }
 }
