@@ -4,8 +4,7 @@ import com.example.plannereventos.dto.ComprovanteResponse;
 import com.example.plannereventos.dto.InscricaoCancelarRequest;
 import com.example.plannereventos.dto.InscricaoCreateRequest;
 import com.example.plannereventos.dto.InscricaoResponse;
-import com.example.plannereventos.exception.EventoSemVagasException;
-import com.example.plannereventos.exception.StatusInvalidoException;
+import com.example.plannereventos.exception.*;
 import com.example.plannereventos.model.*;
 import com.example.plannereventos.notificacao.Notificador;
 import com.example.plannereventos.repository.EventoRepository;
@@ -437,5 +436,82 @@ class InscricaoServiceTest {
         assertEquals(StatusInscricao.CANCELADA, inscricao.getStatus());
         verify(inscricaoRepository, times(1)).salvar(inscricao);
         verify(notificadorSms, times(1)).notificar(participante, eventoPadrao, inscricao);
+    }
+
+    private InscricaoCreateRequest requestInscricao() {
+        InscricaoCreateRequest request = new InscricaoCreateRequest();
+        request.setParticipanteId(participanteId);
+        return request;
+    }
+
+    @Test
+    @DisplayName("RN10 - Deve recusar inscricao em evento inexistente")
+    void deveRecusarInscricaoEmEventoInexistente() {
+        when(eventoRepository.buscarPorId(99)).thenReturn(Optional.empty());
+
+        assertThrows(EventoNaoEncontradoException.class,
+                () -> inscricaoService.inscrever(99, requestInscricao()));
+        verify(inscricaoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("RN11 - Deve recusar inscricao de participante inexistente")
+    void deveRecusarInscricaoDeParticipanteInexistente() {
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.empty());
+
+        assertThrows(ParticipanteNaoEncontradoException.class,
+                () -> inscricaoService.inscrever(1, requestInscricao()));
+        verify(inscricaoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("RN14 - Deve recusar inscricao em evento cancelado")
+    void deveRecusarInscricaoEmEventoCancelado() {
+        eventoPadrao.setStatus("CANCELADO");
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+
+        assertThrows(EventoCanceladoException.class,
+                () -> inscricaoService.inscrever(1, requestInscricao()));
+        verify(inscricaoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("RN15 - Deve recusar inscricao em evento ja iniciado")
+    void deveRecusarInscricaoEmEventoJaIniciado() {
+        eventoPadrao.setData(LocalDate.now().minusDays(1));
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+
+        assertThrows(EventoJaIniciadoException.class,
+                () -> inscricaoService.inscrever(1, requestInscricao()));
+        verify(inscricaoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("RN12 - Deve recusar inscricao duplicada")
+    void deveRecusarInscricaoDuplicada() {
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.existeAtivaOuConfirmada(1, participanteId)).thenReturn(true);
+
+        assertThrows(InscricaoDuplicadaException.class,
+                () -> inscricaoService.inscrever(1, requestInscricao()));
+        verify(inscricaoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("RF17 - Deve recusar inscricao quando o participante nao for elegivel")
+    void deveRecusarInscricaoDeParticipanteInelegivel() {
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.existeAtivaOuConfirmada(1, participanteId)).thenReturn(false);
+        doThrow(new MatriculaInvalidaException())
+                .when(elegibilidadeStrategy).validarElegibilidade(eventoPadrao, participante);
+
+        assertThrows(MatriculaInvalidaException.class,
+                () -> inscricaoService.inscrever(1, requestInscricao()));
+        verify(inscricaoRepository, never()).salvar(any());
     }
 }
