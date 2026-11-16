@@ -11,7 +11,6 @@ import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
 import com.example.plannereventos.strategy.*;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +29,7 @@ public class InscricaoService {
     private final CalculoValorPadraoStrategy calculoPadraoStrategy;
     private final CalculoValorEventoAbertoStrategy calculoEventoAbertoStrategy;
     private final ComprovanteService comprovanteService;
+    private final NotificacaoService notificacaoService;
 
     public InscricaoService(
             InscricaoRepository inscricaoRepository,
@@ -39,15 +39,14 @@ public class InscricaoService {
             List<PoliticaCancelamentoStrategy> listaPoliticasCancelamento,
             CalculoValorPadraoStrategy calculoPadraoStrategy,
             CalculoValorEventoAbertoStrategy calculoEventoAbertoStrategy,
-            ComprovanteService comprovanteService) {
+            ComprovanteService comprovanteService,
+            NotificacaoService notificacaoService) {
 
         this.inscricaoRepository = inscricaoRepository;
         this.eventoRepository = eventoRepository;
         this.participanteRepository = participanteRepository;
         this.calculoPadraoStrategy = calculoPadraoStrategy;
         this.calculoEventoAbertoStrategy = calculoEventoAbertoStrategy;
-        this.comprovanteService = comprovanteService;
-
         this.estrategiasElegibilidade = listaEstrategias.stream()
                 .collect(Collectors.toMap(
                         ElegibilidadeStrategy::getModalidade,
@@ -57,6 +56,8 @@ public class InscricaoService {
                 .collect(Collectors.toMap(
                         PoliticaCancelamentoStrategy::getModalidade,
                         Function.identity()));
+        this.comprovanteService = comprovanteService;
+        this.notificacaoService = notificacaoService;
     }
 
     public List<InscricaoResponse> listarPorEvento(int eventoId) {
@@ -170,14 +171,19 @@ public class InscricaoService {
         Inscricao inscricaoSalva = inscricaoRepository.salvar(inscricao);
 
         ComprovanteResponse comprovante = comprovanteService.emitir(evento, participante, inscricaoSalva);
+
+        notificacaoService.notificarMudancaDeStatus(participante, evento, inscricaoSalva);
+
         InscricaoResponse response = new InscricaoResponse(inscricaoSalva, comprovante);
         response.setNomeParticipante(participante.getNome());
+
         return response;
     }
 
     public void cancelarInscricao(int eventoId, UUID participanteId, InscricaoCancelarRequest request) {
         Evento evento = buscarEventoOuFalhar(eventoId);
-        validarExistenciaParticipante(participanteId);
+
+        Participante participante = buscarParticipanteOuFalhar(participanteId);
 
         Inscricao inscricao = inscricaoRepository
                 .buscarPorEventoEParticipante(eventoId, participanteId)
@@ -200,6 +206,7 @@ public class InscricaoService {
 
         inscricao.cancelar(motivo);
         inscricaoRepository.salvar(inscricao);
+        notificacaoService.notificarMudancaDeStatus(participante, evento, inscricao);
     }
 
     private CalculoValorFinalStrategy obterEstrategiaCalculo(ModalidadeEvento modalidade) {
