@@ -204,7 +204,7 @@ class InscricaoServiceTest {
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
         when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricaoConfirmada));
-        when(inscricaoRepository.contarConfirmadasPorEvento(1)).thenReturn(5);
+        verify(inscricaoRepository, never()).contarConfirmadasPorEvento(anyInt());
 
         assertThrows(StatusInvalidoException.class, () -> inscricaoService.confirmarInscricao(1, participanteId));
         verify(inscricaoRepository, never()).salvar(any());

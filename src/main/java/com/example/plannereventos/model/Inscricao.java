@@ -49,7 +49,7 @@ public class Inscricao {
         }
     }
 
-    private void validarConfirmacaoPermitida() {
+    public void validarConfirmacaoPermitida() {
         if (this.status != StatusInscricao.PENDENTE) {
             throw new StatusInvalidoException(
                     "Somente inscrições PENDENTE podem ser confirmadas. Status atual: " + this.status

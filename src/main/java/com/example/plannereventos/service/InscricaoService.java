@@ -165,6 +165,8 @@ public class InscricaoService {
                 .buscarPorEventoEParticipante(eventoId, participanteId)
                 .orElseThrow(() -> new InscricaoNaoEncontradaException(eventoId, participanteId));
 
+        inscricao.validarConfirmacaoPermitida();
+
         int confirmadas = inscricaoRepository.contarConfirmadasPorEvento(eventoId);
         if (confirmadas >= evento.getCapacidadeMaxima()) {
             throw new EventoSemVagasException(eventoId);
