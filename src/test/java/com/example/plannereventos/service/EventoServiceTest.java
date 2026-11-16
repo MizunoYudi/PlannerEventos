@@ -8,6 +8,7 @@ import com.example.plannereventos.exception.EventoCanceladoException;
 import com.example.plannereventos.exception.EventoJaIniciadoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.model.Evento;
+import com.example.plannereventos.model.LoteInscricao;
 import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
@@ -292,5 +293,40 @@ class EventoServiceTest {
                 18,
                 response.getIdadeMinima()
         );
+    }
+
+    @Test
+    @DisplayName("RF22 - Deve cadastrar evento com valor base e lote ativo informados")
+    void deveCadastrarEventoComValorBaseELote() {
+        EventoCreateRequest request = new EventoCreateRequest(
+                "Workshop Pago", "Evento com inscricao paga",
+                LocalDate.now().plusDays(5), LocalTime.of(14, 0), LocalTime.of(16, 0),
+                "Auditório", 50, ModalidadeEvento.EXCLUSIVO_ALUNOS, null
+        );
+        request.setValorBase(100.0);
+        request.setLoteAtivo(LoteInscricao.PROMOCIONAL);
+
+        when(eventoRepository.salvar(any(Evento.class))).thenAnswer(i -> i.getArgument(0));
+
+        EventoResponse response = eventoService.cadastrar(request);
+
+        assertEquals(100.0, response.getValorBase());
+        assertEquals(LoteInscricao.PROMOCIONAL, response.getLoteAtivo());
+    }
+
+    @Test
+    @DisplayName("RF22 - Deve usar LOTE_2 quando o lote nao for informado")
+    void deveUsarLote2QuandoLoteNaoInformado() {
+        EventoCreateRequest request = new EventoCreateRequest(
+                "Workshop", "Descricao",
+                LocalDate.now().plusDays(5), LocalTime.of(14, 0), LocalTime.of(16, 0),
+                "Auditório", 50, ModalidadeEvento.ABERTO, null
+        );
+
+        when(eventoRepository.salvar(any(Evento.class))).thenAnswer(i -> i.getArgument(0));
+
+        EventoResponse response = eventoService.cadastrar(request);
+
+        assertEquals(LoteInscricao.LOTE_2, response.getLoteAtivo());
     }
 }

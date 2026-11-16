@@ -81,4 +81,21 @@ class InscricaoRepositoryTest {
 
         assertTrue(repository.buscarPorEventoEParticipante(2, participanteId).isEmpty());
     }
+
+    @Test
+    @DisplayName("RN17 - Cancelar inscrição confirmada deve liberar a vaga")
+    void cancelarInscricaoConfirmadaDeveLiberarVaga() {
+        InscricaoRepository repository = new InscricaoRepository();
+        Inscricao inscricao = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(),
+                StatusInscricao.PENDENTE, LoteInscricao.LOTE_1, 90.0, null);
+        repository.salvar(inscricao);
+
+        inscricao.confirmar();
+        repository.salvar(inscricao);
+        assertEquals(1, repository.contarConfirmadasPorEvento(1));
+
+        inscricao.cancelar("Desistência");
+        repository.salvar(inscricao);
+        assertEquals(0, repository.contarConfirmadasPorEvento(1));
+    }
 }

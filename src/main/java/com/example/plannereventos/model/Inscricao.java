@@ -33,20 +33,26 @@ public class Inscricao {
     }
 
     public void confirmar() {
-        validarTransicaoPermitida();
+        validarConfirmacaoPermitida();
         this.status = StatusInscricao.CONFIRMADA;
     }
 
     public void cancelar(String motivo) {
-        validarTransicaoPermitida();
+        validarCancelamentoPermitido();
         this.status = StatusInscricao.CANCELADA;
         this.motivoCancelamento = (motivo != null && !motivo.isBlank()) ? motivo.trim() : null;
     }
 
-    private void validarTransicaoPermitida() {
+    public void validarCancelamentoPermitido() {
+        if (this.status == StatusInscricao.CANCELADA) {
+            throw new StatusInvalidoException("A inscrição já está cancelada.");
+        }
+    }
+
+    private void validarConfirmacaoPermitida() {
         if (this.status != StatusInscricao.PENDENTE) {
             throw new StatusInvalidoException(
-                    "Inscrição no status " + this.status + " não pode sofrer alteração de estado."
+                    "Somente inscrições PENDENTE podem ser confirmadas. Status atual: " + this.status
             );
         }
     }

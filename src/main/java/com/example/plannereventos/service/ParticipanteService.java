@@ -49,7 +49,7 @@ public class ParticipanteService {
         }
 
         participante.setNome(request.getNome().trim());
-        participante.setEmail(request.getEmail().trim());
+        participante.setEmail(request.getEmail().trim().toLowerCase());
         participante.setMatricula(request.getMatricula());
         participante.setMatriculaAtiva(request.getMatriculaAtiva());
         participante.setDataNascimento(request.getDataNascimento());

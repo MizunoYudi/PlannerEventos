@@ -151,7 +151,10 @@ public class InscricaoService {
         novaInscricao.setValorFinal(valorFinal);
 
         Inscricao inscricaoSalva = inscricaoRepository.salvar(novaInscricao);
-        return new InscricaoResponse(inscricaoSalva);
+
+        InscricaoResponse response = new InscricaoResponse(inscricaoSalva);
+        response.setNomeParticipante(participante.getNome());
+        return response;
     }
 
     public InscricaoResponse confirmarInscricao(int eventoId, UUID participanteId) {
@@ -189,11 +192,7 @@ public class InscricaoService {
                 .buscarPorEventoEParticipante(eventoId, participanteId)
                 .orElseThrow(() -> new InscricaoNaoEncontradaException(eventoId, participanteId));
 
-        if (inscricao.getStatus() != StatusInscricao.PENDENTE) {
-            throw new StatusInvalidoException(
-                    "Somente inscrições com status PENDENTE podem ser canceladas. Status atual: " + inscricao.getStatus()
-            );
-        }
+        inscricao.validarCancelamentoPermitido();
 
         String motivo = request != null ? request.getMotivoCancelamento() : null;
 

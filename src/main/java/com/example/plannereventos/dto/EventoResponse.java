@@ -2,6 +2,7 @@ package com.example.plannereventos.dto;
 
 import com.example.plannereventos.model.Evento;
 
+import com.example.plannereventos.model.LoteInscricao;
 import com.example.plannereventos.model.ModalidadeEvento;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -25,6 +26,8 @@ public class EventoResponse {
     private LocalDateTime criadoEm;
     private ModalidadeEvento modalidade;
     private Integer idadeMinima;
+    private double valorBase;
+    private LoteInscricao loteAtivo;
 
     public EventoResponse() {
     }
@@ -43,6 +46,8 @@ public class EventoResponse {
         response.criadoEm = evento.getCriadoEm();
         response.modalidade = evento.getModalidade();
         response.idadeMinima = evento.getIdadeMinima();
+        response.valorBase = evento.getValorBase();
+        response.loteAtivo = evento.getLoteAtivo();
         return response;
     }
 
@@ -137,4 +142,12 @@ public class EventoResponse {
     public void setIdadeMinima(Integer idadeMinima) {
         this.idadeMinima = idadeMinima;
     }
+
+    public double getValorBase() { return valorBase; }
+
+    public void setValorBase(double valorBase) { this.valorBase = valorBase; }
+
+    public LoteInscricao getLoteAtivo() { return loteAtivo; }
+
+    public void setLoteAtivo(LoteInscricao loteAtivo) { this.loteAtivo = loteAtivo; }
 }

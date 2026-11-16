@@ -1,5 +1,6 @@
 package com.example.plannereventos.dto;
 
+import com.example.plannereventos.model.LoteInscricao;
 import com.example.plannereventos.model.ModalidadeEvento;
 import jakarta.validation.constraints.*;
 
@@ -34,6 +35,11 @@ public class EventoUpdateRequest {
 
     @Min(value = 0, message = "A idade mínima não pode ser negativa")
     private Integer idadeMinima;
+
+    @PositiveOrZero(message = "O valor base não pode ser negativo")
+    private double valorBase;
+
+    private LoteInscricao loteAtivo;
 
     @AssertTrue(message = "O horário de término deve ser posterior ao horário de início")
     public boolean isHorarioValido() {
@@ -82,4 +88,12 @@ public class EventoUpdateRequest {
     public Integer getIdadeMinima() { return idadeMinima; }
 
     public void setIdadeMinima(Integer idadeMinima) { this.idadeMinima = idadeMinima; }
+
+    public double getValorBase() { return valorBase; }
+
+    public void setValorBase(double valorBase) { this.valorBase = valorBase; }
+
+    public LoteInscricao getLoteAtivo() { return loteAtivo; }
+
+    public void setLoteAtivo(LoteInscricao loteAtivo) { this.loteAtivo = loteAtivo; }
 }

@@ -234,16 +234,37 @@ class InscricaoServiceTest {
     }
 
     @Test
-    @DisplayName("RF24 / RN10 - Deve lançar StatusInvalidoException ao tentar cancelar inscrição que não está PENDENTE")
-    void deveLancarExcecaoAoCancelarInscricaoJaConfirmada() {
+    @DisplayName("RN16 - Deve cancelar inscrição CONFIRMADA aplicando política de cancelamento da modalidade")
+    void deveCancelarInscricaoConfirmada() {
         Inscricao inscricaoConfirmada = new Inscricao(
                 10, 1, participanteId, LocalDateTime.now(),
                 StatusInscricao.CONFIRMADA, LoteInscricao.PROMOCIONAL, 80.0, null
         );
+        InscricaoCancelarRequest cancelRequest = new InscricaoCancelarRequest();
+        cancelRequest.setMotivoCancelamento("Imprevisto pessoal");
 
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
         when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricaoConfirmada));
+
+        inscricaoService.cancelarInscricao(1, participanteId, cancelRequest);
+
+        assertEquals(StatusInscricao.CANCELADA, inscricaoConfirmada.getStatus());
+        verify(politicaCancelamentoStrategy).validarCancelamento(inscricaoConfirmada, "Imprevisto pessoal");
+        verify(inscricaoRepository).salvar(inscricaoConfirmada);
+    }
+
+    @Test
+    @DisplayName("RN10 - Deve lançar StatusInvalidoException ao tentar cancelar inscrição já CANCELADA")
+    void deveLancarExcecaoAoCancelarInscricaoJaCancelada() {
+        Inscricao inscricaoCancelada = new Inscricao(
+                10, 1, participanteId, LocalDateTime.now(),
+                StatusInscricao.CANCELADA, LoteInscricao.PROMOCIONAL, 80.0, "Motivo anterior"
+        );
+
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricaoCancelada));
 
         assertThrows(StatusInvalidoException.class, () -> inscricaoService.cancelarInscricao(1, participanteId, null));
         verify(politicaCancelamentoStrategy, never()).validarCancelamento(any(), any());
@@ -377,13 +398,13 @@ class InscricaoServiceTest {
     @Test
     @DisplayName("RF25: nao deve notificar quando o cancelamento for recusado (inscricao nao PENDENTE)")
     void naoDeveNotificarQuandoCancelamentoForRecusado() {
-        Inscricao inscricao = criarInscricao(StatusInscricao.CONFIRMADA);
+        Inscricao inscricao = criarInscricao(StatusInscricao.CANCELADA);
         prepararCancelamento(inscricao);
 
         assertThrows(StatusInvalidoException.class,
                 () -> inscricaoService.cancelarInscricao(1, participanteId, motivo("Imprevisto")));
 
-        assertEquals(StatusInscricao.CONFIRMADA, inscricao.getStatus());
+        assertEquals(StatusInscricao.CANCELADA, inscricao.getStatus());
         verifyNoInteractions(notificadorEmail, notificadorSms);
     }
 

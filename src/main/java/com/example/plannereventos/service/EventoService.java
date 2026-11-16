@@ -8,6 +8,7 @@ import com.example.plannereventos.exception.EventoCanceladoException;
 import com.example.plannereventos.exception.EventoJaIniciadoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.model.Evento;
+import com.example.plannereventos.model.LoteInscricao;
 import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
@@ -41,6 +42,8 @@ public class EventoService {
         evento.setCapacidadeMaxima(request.getCapacidadeMaxima());
         evento.setModalidade(request.getModalidade() != null ? request.getModalidade() : ModalidadeEvento.ABERTO);
         evento.setIdadeMinima(request.getIdadeMinima());
+        evento.setValorBase(request.getValorBase());
+        evento.setLoteAtivo(request.getLoteAtivo() != null ? request.getLoteAtivo() : LoteInscricao.LOTE_2);
         evento.setStatus(STATUS_ATIVO);
         evento.setCriadoEm(LocalDateTime.now());
 
@@ -64,6 +67,8 @@ public class EventoService {
         existente.setCapacidadeMaxima(request.getCapacidadeMaxima());
         existente.setModalidade(request.getModalidade() != null ? request.getModalidade() : ModalidadeEvento.ABERTO);
         existente.setIdadeMinima(request.getIdadeMinima());
+        existente.setValorBase(request.getValorBase());
+        existente.setLoteAtivo(request.getLoteAtivo() != null ? request.getLoteAtivo() : LoteInscricao.LOTE_2);
 
         eventoRepository.salvar(existente);
         return EventoResponse.fromEntity(existente);
