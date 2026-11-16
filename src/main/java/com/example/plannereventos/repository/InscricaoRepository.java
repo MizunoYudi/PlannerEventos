@@ -68,12 +68,12 @@ public class InscricaoRepository {
                         && (i.getStatus() == StatusInscricao.PENDENTE || i.getStatus() == StatusInscricao.CONFIRMADA));
     }
 
-    public void cancelarTodasPorEvento(int eventoId, String motivo) {
-        storage.values().stream()
+    public List<Inscricao> cancelarTodasPorEvento(int eventoId, String motivo) {
+        List<Inscricao> canceladas = storage.values().stream()
                 .filter(i -> i.getIdEvento() == eventoId && i.getStatus() != StatusInscricao.CANCELADA)
-                .forEach(i -> {
-                    i.setStatus(StatusInscricao.CANCELADA);
-                    i.setMotivoCancelamento(motivo);
-                });
+                .toList();
+
+        canceladas.forEach(inscricao -> inscricao.cancelar(motivo));
+        return canceladas;
     }
 }

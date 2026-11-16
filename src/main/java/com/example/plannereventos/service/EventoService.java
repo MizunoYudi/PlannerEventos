@@ -8,10 +8,12 @@ import com.example.plannereventos.exception.EventoCanceladoException;
 import com.example.plannereventos.exception.EventoJaIniciadoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.model.Evento;
+import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.model.LoteInscricao;
 import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
+import com.example.plannereventos.repository.ParticipanteRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,10 +27,16 @@ public class EventoService {
 
     private final EventoRepository eventoRepository;
     private final InscricaoRepository inscricaoRepository;
+    private final ParticipanteRepository participanteRepository;
+    private final NotificacaoService notificacaoService;
 
-    public EventoService(EventoRepository eventoRepository, InscricaoRepository inscricaoRepository) {
+    public EventoService(EventoRepository eventoRepository, InscricaoRepository inscricaoRepository,
+                         ParticipanteRepository participanteRepository,
+                         NotificacaoService notificacaoService) {
         this.eventoRepository = eventoRepository;
         this.inscricaoRepository = inscricaoRepository;
+        this.participanteRepository = participanteRepository;
+        this.notificacaoService = notificacaoService;
     }
 
     public EventoResponse cadastrar(EventoCreateRequest request) {
@@ -90,7 +98,9 @@ public class EventoService {
         eventoRepository.salvar(evento);
 
         String justificativa = (motivo != null && !motivo.isBlank()) ? motivo : "Evento cancelado pelo organizador";
-        inscricaoRepository.cancelarTodasPorEvento(id, justificativa);
+
+        List<Inscricao> canceladas = inscricaoRepository.cancelarTodasPorEvento(id, justificativa);
+        notificarInscricoesCanceladas(evento, canceladas);
 
         return EventoResponse.fromEntity(evento);
     }
@@ -123,5 +133,13 @@ public class EventoService {
     private Evento buscarEventoOuLancarExcecao(int id) {
         return eventoRepository.buscarPorId(id)
                 .orElseThrow(() -> new EventoNaoEncontradoException(id));
+    }
+
+    private void notificarInscricoesCanceladas(Evento evento, List<Inscricao> canceladas) {
+        for (Inscricao inscricao : canceladas) {
+            participanteRepository.buscarPorId(inscricao.getParticipanteId())
+                    .ifPresent(participante ->
+                            notificacaoService.notificarMudancaDeStatus(participante, evento, inscricao));
+        }
     }
 }

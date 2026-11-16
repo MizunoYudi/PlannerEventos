@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -97,5 +98,33 @@ class InscricaoRepositoryTest {
         inscricao.cancelar("Desistência");
         repository.salvar(inscricao);
         assertEquals(0, repository.contarConfirmadasPorEvento(1));
+    }
+
+    @Test
+    @DisplayName("Deve cancelar as inscricoes ativas do evento e manter o motivo das ja canceladas")
+    void deveCancelarInscricoesAtivasDoEvento() {
+        InscricaoRepository repository = new InscricaoRepository();
+
+        Inscricao pendente = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(),
+                StatusInscricao.PENDENTE, LoteInscricao.LOTE_2, 0.0, null);
+        Inscricao confirmada = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(),
+                StatusInscricao.CONFIRMADA, LoteInscricao.LOTE_2, 0.0, null);
+        Inscricao jaCancelada = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(),
+                StatusInscricao.CANCELADA, LoteInscricao.LOTE_2, 0.0, "Motivo original");
+        Inscricao outroEvento = new Inscricao(0, 2, UUID.randomUUID(), LocalDateTime.now(),
+                StatusInscricao.CONFIRMADA, LoteInscricao.LOTE_2, 0.0, null);
+
+        repository.salvar(pendente);
+        repository.salvar(confirmada);
+        repository.salvar(jaCancelada);
+        repository.salvar(outroEvento);
+
+        List<Inscricao> canceladas = repository.cancelarTodasPorEvento(1, "Evento cancelado");
+
+        assertEquals(2, canceladas.size());
+        assertEquals(StatusInscricao.CANCELADA, pendente.getStatus());
+        assertEquals(StatusInscricao.CANCELADA, confirmada.getStatus());
+        assertEquals("Motivo original", jaCancelada.getMotivoCancelamento());
+        assertEquals(StatusInscricao.CONFIRMADA, outroEvento.getStatus());
     }
 }
