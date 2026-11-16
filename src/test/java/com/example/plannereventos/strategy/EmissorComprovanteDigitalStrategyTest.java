@@ -45,7 +45,7 @@ class EmissorComprovanteDigitalStrategyTest {
         inscricao.setIdEvento(1);
         inscricao.setParticipanteId(participanteId);
         inscricao.setDataCriacao(LocalDateTime.of(2026, 10, 5, 9, 30));
-        inscricao.setStatus("CONFIRMADA");
+        inscricao.setStatus(StatusInscricao.CONFIRMADA);
         return inscricao;
     }
 

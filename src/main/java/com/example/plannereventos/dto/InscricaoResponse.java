@@ -1,8 +1,10 @@
 package com.example.plannereventos.dto;
 
 import com.example.plannereventos.model.Inscricao;
+import com.example.plannereventos.model.LoteInscricao;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -11,10 +13,15 @@ public class InscricaoResponse {
     private int eventoId;
     private UUID participanteId;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String nomeParticipante;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dataCriacao;
 
     private String status;
+    private LoteInscricao loteAtivo;
+    private double valorFinal;
     private String motivoCancelamento;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -37,7 +44,9 @@ public class InscricaoResponse {
         this.eventoId = inscricao.getIdEvento();
         this.participanteId = inscricao.getParticipanteId();
         this.dataCriacao = inscricao.getDataCriacao();
-        this.status = inscricao.getStatus();
+        this.status = inscricao.getStatus() != null ? inscricao.getStatus().name() : null;
+        this.loteAtivo = inscricao.getLoteAtivo();
+        this.valorFinal = inscricao.getValorFinal();
         this.motivoCancelamento = inscricao.getMotivoCancelamento();
     }
 
@@ -46,59 +55,33 @@ public class InscricaoResponse {
         this.comprovante = comprovante;
     }
 
-    public int getId() {
-        return id;
-    }
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    public int getEventoId() { return eventoId; }
+    public void setEventoId(int eventoId) { this.eventoId = eventoId; }
 
-    public int getEventoId() {
-        return eventoId;
-    }
+    public UUID getParticipanteId() { return participanteId; }
+    public void setParticipanteId(UUID participanteId) { this.participanteId = participanteId; }
 
-    public void setEventoId(int eventoId) {
-        this.eventoId = eventoId;
-    }
+    public LocalDateTime getDataCriacao() { return dataCriacao; }
+    public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
 
-    public UUID getParticipanteId() {
-        return participanteId;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public void setParticipanteId(UUID participanteId) {
-        this.participanteId = participanteId;
-    }
+    public LoteInscricao getLoteAtivo() { return loteAtivo; }
+    public void setLoteAtivo(LoteInscricao loteAtivo) { this.loteAtivo = loteAtivo; }
 
-    public LocalDateTime getDataCriacao() {
-        return dataCriacao;
-    }
+    public double getValorFinal() { return valorFinal; }
+    public void setValorFinal(double valorFinal) { this.valorFinal = valorFinal; }
+    public String getNomeParticipante() { return nomeParticipante; }
 
-    public void setDataCriacao(LocalDateTime dataCriacao) {
-        this.dataCriacao = dataCriacao;
-    }
+    public void setNomeParticipante(String nomeParticipante) { this.nomeParticipante = nomeParticipante; }
 
-    public String getStatus() {
-        return status;
-    }
+    public String getMotivoCancelamento() { return motivoCancelamento; }
+    public void setMotivoCancelamento(String motivoCancelamento) { this.motivoCancelamento = motivoCancelamento; }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getMotivoCancelamento() {
-        return motivoCancelamento;
-    }
-
-    public void setMotivoCancelamento(String motivoCancelamento) {
-        this.motivoCancelamento = motivoCancelamento;
-    }
-
-    public ComprovanteResponse getComprovante() {
-        return comprovante;
-    }
-
-    public void setComprovante(ComprovanteResponse comprovante) {
-        this.comprovante = comprovante;
-    }
+    public ComprovanteResponse getComprovante() { return comprovante; }
+    public void setComprovante(ComprovanteResponse comprovante) { this.comprovante = comprovante; }
 }

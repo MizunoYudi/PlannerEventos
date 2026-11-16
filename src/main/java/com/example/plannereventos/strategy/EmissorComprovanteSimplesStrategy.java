@@ -33,7 +33,7 @@ public class EmissorComprovanteSimplesStrategy implements EmissorComprovanteStra
     }
 
     private String montarResumo(Evento evento, Participante participante, Inscricao inscricao) {
-        return String.join(System.lineSeparator(),
+        return String.join(" | ",
                 "COMPROVANTE DE INSCRIÇÃO: ",
                 "Inscricao: " + inscricao.getId() + " (" + inscricao.getStatus() + ")",
                 "Participante: " + participante.getNome(),
