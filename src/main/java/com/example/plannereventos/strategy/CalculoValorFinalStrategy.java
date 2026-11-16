@@ -1,6 +1,9 @@
 package com.example.plannereventos.strategy;
 
 import com.example.plannereventos.model.LoteInscricao;
+import com.example.plannereventos.model.ModalidadeEvento;
+
+import java.util.Set;
 
 public interface CalculoValorFinalStrategy {
     /**
@@ -11,4 +14,6 @@ public interface CalculoValorFinalStrategy {
      * @return Valor final calculado com o desconto aplicado
      */
     double calcular(double valorBase, LoteInscricao lote);
+
+    Set<ModalidadeEvento> getModalidades();
 }

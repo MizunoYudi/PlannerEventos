@@ -48,4 +48,5 @@ public class CancelamentoEventoAbertoStrategy
     public ModalidadeEvento getModalidade() {
         return ModalidadeEvento.ABERTO;
     }
+    
 }

@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.EnumMap;
 
 @Service
 public class InscricaoService {
@@ -26,8 +27,7 @@ public class InscricaoService {
     private final ParticipanteRepository participanteRepository;
     private final Map<ModalidadeEvento, ElegibilidadeStrategy> estrategiasElegibilidade;
     private final Map<ModalidadeEvento, PoliticaCancelamentoStrategy> politicasCancelamento;
-    private final CalculoValorPadraoStrategy calculoPadraoStrategy;
-    private final CalculoValorEventoAbertoStrategy calculoEventoAbertoStrategy;
+    private final Map<ModalidadeEvento, CalculoValorFinalStrategy> estrategiasCalculo;
     private final ComprovanteService comprovanteService;
     private final NotificacaoService notificacaoService;
 
@@ -37,16 +37,14 @@ public class InscricaoService {
             ParticipanteRepository participanteRepository,
             List<ElegibilidadeStrategy> listaEstrategias,
             List<PoliticaCancelamentoStrategy> listaPoliticasCancelamento,
-            CalculoValorPadraoStrategy calculoPadraoStrategy,
-            CalculoValorEventoAbertoStrategy calculoEventoAbertoStrategy,
+            List<CalculoValorFinalStrategy> listaEstrategiasCalculo,
             ComprovanteService comprovanteService,
             NotificacaoService notificacaoService) {
 
         this.inscricaoRepository = inscricaoRepository;
         this.eventoRepository = eventoRepository;
         this.participanteRepository = participanteRepository;
-        this.calculoPadraoStrategy = calculoPadraoStrategy;
-        this.calculoEventoAbertoStrategy = calculoEventoAbertoStrategy;
+        this.estrategiasCalculo = mapearCalculosPorModalidade(listaEstrategiasCalculo);
         this.estrategiasElegibilidade = listaEstrategias.stream()
                 .collect(Collectors.toMap(
                         ElegibilidadeStrategy::getModalidade,
@@ -211,10 +209,25 @@ public class InscricaoService {
     }
 
     private CalculoValorFinalStrategy obterEstrategiaCalculo(ModalidadeEvento modalidade) {
-        if (modalidade == ModalidadeEvento.ABERTO) {
-            return calculoEventoAbertoStrategy;
+        CalculoValorFinalStrategy estrategia = estrategiasCalculo.get(modalidade);
+        if (estrategia == null) {
+            throw new IllegalStateException("Estrategia de calculo nao encontrada para: " + modalidade);
         }
-        return calculoPadraoStrategy;
+        return estrategia;
+    }
+
+    private static Map<ModalidadeEvento, CalculoValorFinalStrategy> mapearCalculosPorModalidade(
+            List<CalculoValorFinalStrategy> estrategias) {
+        Map<ModalidadeEvento, CalculoValorFinalStrategy> mapa = new EnumMap<>(ModalidadeEvento.class);
+        for (CalculoValorFinalStrategy estrategia : estrategias) {
+            for (ModalidadeEvento modalidade : estrategia.getModalidades()) {
+                if (mapa.putIfAbsent(modalidade, estrategia) != null) {
+                    throw new IllegalStateException(
+                            "Mais de uma estrategia de calculo para a modalidade: " + modalidade);
+                }
+            }
+        }
+        return mapa;
     }
 
     private Evento buscarEventoOuFalhar(int eventoId) {

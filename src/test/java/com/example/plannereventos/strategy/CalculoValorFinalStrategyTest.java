@@ -1,8 +1,11 @@
 package com.example.plannereventos.strategy;
 
 import com.example.plannereventos.model.LoteInscricao;
+import com.example.plannereventos.model.ModalidadeEvento;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -45,5 +48,18 @@ class CalculoValorFinalStrategyTest {
         assertEquals(0.0, calculoEventoAberto.calcular(150.0, LoteInscricao.PROMOCIONAL), 0.001);
         assertEquals(0.0, calculoEventoAberto.calcular(150.0, LoteInscricao.LOTE_1), 0.001);
         assertEquals(0.0, calculoEventoAberto.calcular(150.0, LoteInscricao.LOTE_2), 0.001);
+    }
+
+    @Test
+    @DisplayName("RN08 - Calculo padrao deve atender as modalidades pagas")
+    void calculoPadraoDeveAtenderModalidadesPagas() {
+        assertEquals(Set.of(ModalidadeEvento.EXCLUSIVO_ALUNOS, ModalidadeEvento.RESTRICAO_IDADE),
+                calculoPadrao.getModalidades());
+    }
+
+    @Test
+    @DisplayName("RN08 - Calculo de evento aberto deve atender somente a modalidade ABERTO")
+    void calculoEventoAbertoDeveAtenderModalidadeAberto() {
+        assertEquals(Set.of(ModalidadeEvento.ABERTO), calculoEventoAberto.getModalidades());
     }
 }

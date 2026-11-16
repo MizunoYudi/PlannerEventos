@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -75,6 +76,8 @@ class InscricaoServiceTest {
     void setUp() {
         lenient().when(elegibilidadeStrategy.getModalidade()).thenReturn(ModalidadeEvento.EXCLUSIVO_ALUNOS);
         lenient().when(politicaCancelamentoStrategy.getModalidade()).thenReturn(ModalidadeEvento.EXCLUSIVO_ALUNOS);
+        lenient().when(calculoPadraoStrategy.getModalidades()).thenReturn(Set.of(ModalidadeEvento.EXCLUSIVO_ALUNOS, ModalidadeEvento.RESTRICAO_IDADE));
+        lenient().when(calculoEventoAbertoStrategy.getModalidades()).thenReturn(Set.of(ModalidadeEvento.ABERTO));
 
         inscricaoService = new InscricaoService(
                 inscricaoRepository,
@@ -82,8 +85,7 @@ class InscricaoServiceTest {
                 participanteRepository,
                 List.of(elegibilidadeStrategy),
                 List.of(politicaCancelamentoStrategy),
-                calculoPadraoStrategy,
-                calculoEventoAbertoStrategy,
+                List.of(calculoPadraoStrategy, calculoEventoAbertoStrategy),
                 comprovanteService,
                 new NotificacaoService(List.of(notificadorEmail, notificadorSms))
         );
@@ -149,7 +151,7 @@ class InscricaoServiceTest {
         assertEquals(0.0, response.getValorFinal());
         assertEquals("PENDENTE", response.getStatus());
         verify(calculoEventoAbertoStrategy).calcular(100.0, LoteInscricao.PROMOCIONAL);
-        verifyNoInteractions(calculoPadraoStrategy);
+        verify(calculoPadraoStrategy, never()).calcular(anyDouble(), any());
     }
 
     @Test
