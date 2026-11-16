@@ -1,0 +1,12 @@
+package com.example.plannereventos.notificacao;
+
+import com.example.plannereventos.model.Evento;
+import com.example.plannereventos.model.Inscricao;
+import com.example.plannereventos.model.Participante;
+
+public interface Notificador {
+
+    void notificar(Participante participante, Evento evento, Inscricao inscricao);
+
+    String getCanal();
+}
