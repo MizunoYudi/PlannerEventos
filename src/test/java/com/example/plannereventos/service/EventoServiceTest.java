@@ -7,10 +7,10 @@ import com.example.plannereventos.dto.EventoVagasResponse;
 import com.example.plannereventos.exception.EventoCanceladoException;
 import com.example.plannereventos.exception.EventoJaIniciadoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
-import com.example.plannereventos.model.Evento;
-import com.example.plannereventos.model.ModalidadeEvento;
+import com.example.plannereventos.model.*;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
+import com.example.plannereventos.repository.ParticipanteRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,6 +38,12 @@ class EventoServiceTest {
 
     @Mock
     private InscricaoRepository inscricaoRepository;
+
+    @Mock
+    private ParticipanteRepository participanteRepository;
+
+    @Mock
+    private NotificacaoService notificacaoService;
 
     @InjectMocks
     private EventoService eventoService;
@@ -292,5 +299,87 @@ class EventoServiceTest {
                 18,
                 response.getIdadeMinima()
         );
+    }
+
+    @Test
+    @DisplayName("RF22 - Deve cadastrar evento com valor base e lote ativo informados")
+    void deveCadastrarEventoComValorBaseELote() {
+        EventoCreateRequest request = new EventoCreateRequest(
+                "Workshop Pago", "Evento com inscricao paga",
+                LocalDate.now().plusDays(5), LocalTime.of(14, 0), LocalTime.of(16, 0),
+                "Auditório", 50, ModalidadeEvento.EXCLUSIVO_ALUNOS, null
+        );
+        request.setValorBase(100.0);
+        request.setLoteAtivo(LoteInscricao.PROMOCIONAL);
+
+        when(eventoRepository.salvar(any(Evento.class))).thenAnswer(i -> i.getArgument(0));
+
+        EventoResponse response = eventoService.cadastrar(request);
+
+        assertEquals(100.0, response.getValorBase());
+        assertEquals(LoteInscricao.PROMOCIONAL, response.getLoteAtivo());
+    }
+
+    @Test
+    @DisplayName("RF22 - Deve usar LOTE_2 quando o lote nao for informado")
+    void deveUsarLote2QuandoLoteNaoInformado() {
+        EventoCreateRequest request = new EventoCreateRequest(
+                "Workshop", "Descricao",
+                LocalDate.now().plusDays(5), LocalTime.of(14, 0), LocalTime.of(16, 0),
+                "Auditório", 50, ModalidadeEvento.ABERTO, null
+        );
+
+        when(eventoRepository.salvar(any(Evento.class))).thenAnswer(i -> i.getArgument(0));
+
+        EventoResponse response = eventoService.cadastrar(request);
+
+        assertEquals(LoteInscricao.LOTE_2, response.getLoteAtivo());
+    }
+
+    @Test
+    @DisplayName("RF25 - Deve notificar os participantes quando o evento for cancelado")
+    void deveNotificarParticipantesAoCancelarEvento() {
+        Evento evento = criarEventoPadrao(1, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(15, 0));
+
+        UUID idAna = UUID.randomUUID();
+        UUID idBruno = UUID.randomUUID();
+        Participante ana = new Participante();
+        ana.setId(idAna);
+        Participante bruno = new Participante();
+        bruno.setId(idBruno);
+
+        Inscricao inscricaoAna = new Inscricao(1, 1, idAna, LocalDateTime.now(),
+                StatusInscricao.CANCELADA, LoteInscricao.LOTE_2, 0.0, "Evento cancelado");
+        Inscricao inscricaoBruno = new Inscricao(2, 1, idBruno, LocalDateTime.now(),
+                StatusInscricao.CANCELADA, LoteInscricao.LOTE_2, 0.0, "Evento cancelado");
+
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
+        when(inscricaoRepository.cancelarTodasPorEvento(1, "Evento cancelado"))
+                .thenReturn(List.of(inscricaoAna, inscricaoBruno));
+        when(participanteRepository.buscarPorId(idAna)).thenReturn(Optional.of(ana));
+        when(participanteRepository.buscarPorId(idBruno)).thenReturn(Optional.of(bruno));
+
+        eventoService.cancelar(1, "Evento cancelado");
+
+        verify(notificacaoService).notificarMudancaDeStatus(ana, evento, inscricaoAna);
+        verify(notificacaoService).notificarMudancaDeStatus(bruno, evento, inscricaoBruno);
+    }
+
+    @Test
+    @DisplayName("RF25 - Nao deve falhar o cancelamento do evento quando um participante nao for encontrado")
+    void deveCancelarEventoMesmoSemEncontrarParticipante() {
+        Evento evento = criarEventoPadrao(1, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(15, 0));
+        UUID idInexistente = UUID.randomUUID();
+        Inscricao inscricao = new Inscricao(1, 1, idInexistente, LocalDateTime.now(),
+                StatusInscricao.CANCELADA, LoteInscricao.LOTE_2, 0.0, "Evento cancelado");
+
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
+        when(inscricaoRepository.cancelarTodasPorEvento(1, "Evento cancelado")).thenReturn(List.of(inscricao));
+        when(participanteRepository.buscarPorId(idInexistente)).thenReturn(Optional.empty());
+
+        EventoResponse response = assertDoesNotThrow(() -> eventoService.cancelar(1, "Evento cancelado"));
+
+        assertEquals("CANCELADO", response.getStatus());
+        verifyNoInteractions(notificacaoService);
     }
 }
