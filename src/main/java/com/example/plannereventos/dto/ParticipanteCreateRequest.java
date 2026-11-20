@@ -15,6 +15,8 @@ public class ParticipanteCreateRequest {
     @Email(message = "O e-mail deve possuir um formato valido")
     private String email;
 
+    private String senha;
+
     private String matricula;
 
     private Boolean matriculaAtiva;
@@ -53,6 +55,10 @@ public class ParticipanteCreateRequest {
     public void setEmail(String email) {
         this.email = email;
     }
+
+    public String getSenha() { return senha; }
+
+    public void setSenha(String senha) { this.senha = senha; }
 
     public String getMatricula() {
         return matricula;
