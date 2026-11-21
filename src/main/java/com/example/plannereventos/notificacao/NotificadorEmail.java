@@ -23,6 +23,16 @@ public class NotificadorEmail implements Notificador {
     }
 
     @Override
+    public void notificarPrazoConfirmacao(Participante participante, Evento evento, Inscricao inscricao, String tempoRestante) {
+        log.info("[E-MAIL] Para: {} | Ola, {}! Voce tem {} para CONFIRMAR sua vaga no evento '{}' (inscricao {}).",
+                participante.getEmail(),
+                participante.getNome(),
+                tempoRestante,
+                evento.getTitulo(),
+                inscricao.getId());
+    }
+
+    @Override
     public String getCanal() {
         return "E-MAIL";
     }

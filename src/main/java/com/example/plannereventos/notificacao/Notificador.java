@@ -8,5 +8,7 @@ public interface Notificador {
 
     void notificar(Participante participante, Evento evento, Inscricao inscricao);
 
+    void notificarPrazoConfirmacao(Participante participante, Evento evento, Inscricao inscricao, String tempoRestante);
+
     String getCanal();
 }
