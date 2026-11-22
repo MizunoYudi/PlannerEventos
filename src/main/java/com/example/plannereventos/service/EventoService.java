@@ -14,8 +14,10 @@ import com.example.plannereventos.model.ModalidadeEvento;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,6 +26,9 @@ public class EventoService {
 
     private static final String STATUS_ATIVO = "ATIVO";
     private static final String STATUS_CANCELADO = "CANCELADO";
+
+    @Value("${notificacao.prazo.confirmacao-horas:24}")
+    private int prazoConfirmacaoHoras = 24;
 
     private final EventoRepository eventoRepository;
     private final InscricaoRepository inscricaoRepository;
@@ -141,5 +146,11 @@ public class EventoService {
                     .ifPresent(participante ->
                             notificacaoService.notificarMudancaDeStatus(participante, evento, inscricao));
         }
+    }
+
+    public Duration obterTempoRestante(Evento evento) {
+        LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), evento.getHoraInicio());
+        LocalDateTime limiteConfirmacao = inicioEvento.minus(Duration.ofHours(prazoConfirmacaoHoras));
+        return Duration.between(LocalDateTime.now(), limiteConfirmacao);
     }
 }

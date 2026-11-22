@@ -20,7 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -310,6 +312,7 @@ class InscricaoServiceTest {
         assertNotNull(resultado);
         assertEquals(10, resultado.getId());
     }
+
     private Inscricao criarInscricao(StatusInscricao status) {
         return new Inscricao(10, 1, participanteId, LocalDateTime.now(),
                 status, LoteInscricao.PROMOCIONAL, 80.0, null);
@@ -327,6 +330,18 @@ class InscricaoServiceTest {
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
         when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricao));
+    }
+
+    private void prepararInscricaoPendente(Inscricao inscricao) {
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(inscricao));
+    }
+
+    private void definirInicioDoEvento(Duration ate) {
+        LocalDateTime inicio = LocalDateTime.now().plus(ate);
+        eventoPadrao.setData(inicio.toLocalDate());
+        eventoPadrao.setHoraInicio(inicio.toLocalTime());
     }
 
     private InscricaoCancelarRequest motivo(String texto) {
@@ -362,21 +377,23 @@ class InscricaoServiceTest {
     }
 
     @Test
-    @DisplayName("RF25: nao deve notificar ao criar inscricao PENDENTE")
-    void naoDeveNotificarAoCriarInscricaoPendente() {
-        InscricaoCreateRequest request = new InscricaoCreateRequest();
-        request.setParticipanteId(participanteId);
-
+    @DisplayName("Prazo: deve notificar o prazo de confirmacao em todos os canais ao criar inscricao PENDENTE")
+    void deveNotificarPrazoDeConfirmacaoAoCriarInscricaoPendente() {
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
         when(inscricaoRepository.existeAtivaOuConfirmada(1, participanteId)).thenReturn(false);
         when(calculoPadraoStrategy.calcular(100.0, LoteInscricao.PROMOCIONAL)).thenReturn(80.0);
         when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
 
-        InscricaoResponse response = inscricaoService.inscrever(1, request);
+        InscricaoResponse response = inscricaoService.inscrever(1, requestInscricao());
 
         assertEquals("PENDENTE", response.getStatus());
-        verifyNoInteractions(notificadorEmail, notificadorSms);
+        verify(notificadorEmail, times(1))
+                .notificarPrazoConfirmacao(eq(participante), eq(eventoPadrao), any(Inscricao.class), anyString());
+        verify(notificadorSms, times(1))
+                .notificarPrazoConfirmacao(eq(participante), eq(eventoPadrao), any(Inscricao.class), anyString());
+        verify(notificadorEmail, never()).notificar(any(), any(), any());
+        verify(notificadorSms, never()).notificar(any(), any(), any());
     }
 
     @Test
@@ -438,6 +455,125 @@ class InscricaoServiceTest {
         assertEquals(StatusInscricao.CANCELADA, inscricao.getStatus());
         verify(inscricaoRepository, times(1)).salvar(inscricao);
         verify(notificadorSms, times(1)).notificar(participante, eventoPadrao, inscricao);
+    }
+
+    @Test
+    @DisplayName("RN11: falha em um canal ao notificar o prazo nao deve impedir a inscricao")
+    void deveManterInscricaoMesmoComFalhaNoLembreteDePrazo() {
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.existeAtivaOuConfirmada(1, participanteId)).thenReturn(false);
+        when(calculoPadraoStrategy.calcular(100.0, LoteInscricao.PROMOCIONAL)).thenReturn(80.0);
+        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
+        doThrow(new IllegalStateException("Servico de SMS indisponivel"))
+                .when(notificadorSms).notificarPrazoConfirmacao(any(), any(), any(), any());
+
+        InscricaoResponse response = assertDoesNotThrow(() -> inscricaoService.inscrever(1, requestInscricao()));
+
+        assertEquals("PENDENTE", response.getStatus());
+        verify(inscricaoRepository, times(1)).salvar(any(Inscricao.class));
+        verify(notificadorEmail, times(1))
+                .notificarPrazoConfirmacao(eq(participante), eq(eventoPadrao), any(Inscricao.class), anyString());
+    }
+
+    @Test
+    @DisplayName("Prazo: deve aceitar inscricao quando o evento comeca em mais de 24h")
+    void deveAceitarInscricaoComEventoApos24Horas() {
+        definirInicioDoEvento(Duration.ofHours(25));
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(inscricaoRepository.existeAtivaOuConfirmada(1, participanteId)).thenReturn(false);
+        when(calculoPadraoStrategy.calcular(100.0, LoteInscricao.PROMOCIONAL)).thenReturn(80.0);
+        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
+
+        InscricaoResponse response = inscricaoService.inscrever(1, requestInscricao());
+
+        assertEquals("PENDENTE", response.getStatus());
+        verify(inscricaoRepository).salvar(any(Inscricao.class));
+    }
+
+    @Test
+    @DisplayName("Prazo: deve recusar inscricao quando faltam menos de 24h para o evento")
+    void deveRecusarInscricaoQuandoPrazoDeConfirmacaoJaPassou() {
+        definirInicioDoEvento(Duration.ofHours(10));
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
+                () -> inscricaoService.inscrever(1, requestInscricao()));
+
+        assertTrue(ex.getMessage().contains("prazo de confirmacao"));
+        verify(inscricaoRepository, never()).salvar(any());
+        verifyNoInteractions(notificadorEmail, notificadorSms);
+    }
+
+    @Test
+    @DisplayName("Prazo: deve recusar inscricao usando o prazo configurado")
+    void deveRecusarInscricaoUsandoPrazoConfigurado() {
+        ReflectionTestUtils.setField(inscricaoService, "prazoConfirmacaoHoras", 48L);
+        definirInicioDoEvento(Duration.ofHours(30));
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+
+        assertThrows(RegraNegocioException.class,
+                () -> inscricaoService.inscrever(1, requestInscricao()));
+
+        verify(inscricaoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("Prazo: deve confirmar inscricao quando o evento comeca em mais de 24h")
+    void deveConfirmarInscricaoDentroDoPrazo() {
+        definirInicioDoEvento(Duration.ofHours(25));
+        Inscricao inscricao = criarInscricao(StatusInscricao.PENDENTE);
+        prepararConfirmacao(inscricao);
+
+        InscricaoResponse response = inscricaoService.confirmarInscricao(1, participanteId);
+
+        assertEquals("CONFIRMADA", response.getStatus());
+    }
+
+    @Test
+    @DisplayName("Prazo: deve recusar confirmacao quando faltam menos de 24h para o evento")
+    void deveRecusarConfirmacaoForaDoPrazo() {
+        definirInicioDoEvento(Duration.ofHours(10));
+        Inscricao inscricao = criarInscricao(StatusInscricao.PENDENTE);
+        prepararInscricaoPendente(inscricao);
+
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
+                () -> inscricaoService.confirmarInscricao(1, participanteId));
+
+        assertTrue(ex.getMessage().contains("prazo para confirmar"));
+        assertEquals(StatusInscricao.PENDENTE, inscricao.getStatus());
+        verify(inscricaoRepository, never()).salvar(any());
+        verifyNoInteractions(comprovanteService, notificadorEmail, notificadorSms);
+    }
+
+    @Test
+    @DisplayName("Prazo: deve usar o numero de horas configurado ao recusar a confirmacao")
+    void deveRecusarConfirmacaoUsandoPrazoConfigurado() {
+        ReflectionTestUtils.setField(inscricaoService, "prazoConfirmacaoHoras", 48L);
+        definirInicioDoEvento(Duration.ofHours(30));
+        Inscricao inscricao = criarInscricao(StatusInscricao.PENDENTE);
+        prepararInscricaoPendente(inscricao);
+
+        assertThrows(RegraNegocioException.class,
+                () -> inscricaoService.confirmarInscricao(1, participanteId));
+
+        assertEquals(StatusInscricao.PENDENTE, inscricao.getStatus());
+    }
+
+    @Test
+    @DisplayName("Prazo: deve aceitar a confirmacao quando o prazo configurado e menor que o tempo restante")
+    void deveConfirmarUsandoPrazoConfigurado() {
+        ReflectionTestUtils.setField(inscricaoService, "prazoConfirmacaoHoras", 2L);
+        definirInicioDoEvento(Duration.ofHours(3));
+        Inscricao inscricao = criarInscricao(StatusInscricao.PENDENTE);
+        prepararConfirmacao(inscricao);
+
+        InscricaoResponse response = inscricaoService.confirmarInscricao(1, participanteId);
+
+        assertEquals("CONFIRMADA", response.getStatus());
     }
 
     private InscricaoCreateRequest requestInscricao() {
@@ -515,5 +651,41 @@ class InscricaoServiceTest {
         assertThrows(MatriculaInvalidaException.class,
                 () -> inscricaoService.inscrever(1, requestInscricao()));
         verify(inscricaoRepository, never()).salvar(any());
+    }
+
+    @Test
+    @DisplayName("Vagas esgotadas: ao preencher a ultima vaga, deve notificar e cancelar apenas as pendentes do mesmo evento")
+    void deveNotificarECancelarApenasPendentesDoMesmoEventoAoEsgotarVagas() {
+        eventoPadrao.setCapacidadeMaxima(2);
+        UUID participanteBId = UUID.randomUUID();
+        UUID participanteCId = UUID.randomUUID();
+        Participante participanteB = new Participante();
+        participanteB.setId(participanteBId);
+        participanteB.setNome("Carlos Lima");
+
+        Inscricao confirmando = criarInscricao(StatusInscricao.PENDENTE);
+        Inscricao pendenteMesmoEvento = new Inscricao(11, 1, participanteBId, LocalDateTime.now(),
+                StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null);
+        Inscricao pendenteOutroEvento = new Inscricao(12, 2, participanteCId, LocalDateTime.now(),
+                StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null);
+
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+        when(participanteRepository.buscarPorId(participanteBId)).thenReturn(Optional.of(participanteB));
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(confirmando));
+        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteBId)).thenReturn(Optional.of(pendenteMesmoEvento));
+        when(inscricaoRepository.contarConfirmadasPorEvento(1)).thenReturn(1, 2);
+        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
+        lenient().when(inscricaoRepository.listarPorEvento(1)).thenReturn(List.of(confirmando, pendenteMesmoEvento));
+        when(inscricaoRepository.listarPendentes()).thenReturn(List.of(pendenteMesmoEvento, pendenteOutroEvento));
+
+        inscricaoService.confirmarInscricao(1, participanteId);
+
+        assertEquals(StatusInscricao.CANCELADA, pendenteMesmoEvento.getStatus());
+        assertEquals(StatusInscricao.PENDENTE, pendenteOutroEvento.getStatus());
+        verify(notificadorEmail).notificarVagasEsgotadas(participanteB, eventoPadrao, pendenteMesmoEvento);
+        verify(notificadorSms).notificarVagasEsgotadas(participanteB, eventoPadrao, pendenteMesmoEvento);
+        verify(notificadorEmail, never()).notificarVagasEsgotadas(any(), any(), eq(pendenteOutroEvento));
+        verify(notificadorSms, never()).notificarVagasEsgotadas(any(), any(), eq(pendenteOutroEvento));
     }
 }

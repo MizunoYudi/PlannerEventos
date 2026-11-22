@@ -6,8 +6,11 @@ import com.example.plannereventos.model.Participante;
 import com.example.plannereventos.notificacao.Notificador;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -15,6 +18,9 @@ public class NotificacaoService {
     private static final Logger log = LoggerFactory.getLogger(NotificacaoService.class);
 
     private final List<Notificador> notificadores;
+
+    @Value("${notificacao.prazo.confirmacao-horas:24}")
+    private long prazoConfirmacaoHoras = 24;
 
     public NotificacaoService(List<Notificador> notificadores) {
         this.notificadores = List.copyOf(notificadores);
@@ -33,5 +39,46 @@ public class NotificacaoService {
                         ex);
             }
         }
+    }
+
+    public void notificarPrazoConfirmacao(Participante participante, Evento evento, Inscricao inscricao) {
+        LocalDateTime limiteConfirmacao = LocalDateTime.of(evento.getData(), evento.getHoraInicio()).minusHours(prazoConfirmacaoHoras);
+        Duration tempoRestante = Duration.between(LocalDateTime.now(), limiteConfirmacao);
+        String tempoFormatado = formatarTempoRestante(tempoRestante);
+
+        for (Notificador notificador : notificadores) {
+            try {
+                notificador.notificarPrazoConfirmacao(participante, evento, inscricao, tempoFormatado);
+            } catch (RuntimeException ex) {
+                log.error("Falha ao enviar lembrete de prazo via {} para a inscricao {}: {}",
+                        notificador.getCanal(),
+                        inscricao.getId(),
+                        ex.getMessage(),
+                        ex);
+            }
+        }
+    }
+
+    public void notificarVagasEsgotadas(Participante participante, Evento evento, Inscricao inscricao) {
+        for (Notificador notificador : notificadores) {
+            try {
+                notificador.notificarVagasEsgotadas(participante, evento, inscricao);
+            } catch (RuntimeException ex) {
+                log.error("Falha ao enviar aviso de vagas esgotadas via {} para a inscricao {}: {}",
+                        notificador.getCanal(),
+                        inscricao.getId(),
+                        ex.getMessage(),
+                        ex);
+            }
+        }
+    }
+
+    private static String formatarTempoRestante(Duration tempo) {
+        long horas = tempo.toHours();
+        long minutos = tempo.toMinutesPart();
+        if (horas > 0) {
+            return minutos > 0 ? horas + "h e " + minutos + "min" : horas + "h";
+        }
+        return Math.max(minutos, 1) + "min";
     }
 }

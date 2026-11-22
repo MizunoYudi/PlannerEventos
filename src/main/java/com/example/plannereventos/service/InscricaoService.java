@@ -10,14 +10,14 @@ import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
 import com.example.plannereventos.strategy.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.EnumMap;
 
 @Service
 public class InscricaoService {
@@ -30,6 +30,8 @@ public class InscricaoService {
     private final Map<ModalidadeEvento, CalculoValorFinalStrategy> estrategiasCalculo;
     private final ComprovanteService comprovanteService;
     private final NotificacaoService notificacaoService;
+    @Value("${notificacao.prazo.confirmacao-horas:24}")
+    private long prazoConfirmacaoHoras = 24;
 
     public InscricaoService(
             InscricaoRepository inscricaoRepository,
@@ -127,6 +129,11 @@ public class InscricaoService {
             throw new EventoJaIniciadoException(eventoId);
         }
 
+        if (!LocalDateTime.now().isBefore(inicioEvento.minusHours(prazoConfirmacaoHoras))) {
+            throw new RegraNegocioException(
+                    "Inscricoes encerradas: o prazo de confirmacao (24h antes do evento) ja passou.");
+        }
+
         if (inscricaoRepository.existeAtivaOuConfirmada(eventoId, participanteId)) {
             throw new InscricaoDuplicadaException(eventoId, participanteId);
         }
@@ -151,6 +158,9 @@ public class InscricaoService {
         Inscricao inscricaoSalva = inscricaoRepository.salvar(novaInscricao);
 
         InscricaoResponse response = new InscricaoResponse(inscricaoSalva);
+
+        notificacaoService.notificarPrazoConfirmacao(participante, evento, inscricaoSalva);
+
         response.setNomeParticipante(participante.getNome());
         return response;
     }
@@ -164,6 +174,11 @@ public class InscricaoService {
                 .orElseThrow(() -> new InscricaoNaoEncontradaException(eventoId, participanteId));
 
         inscricao.validarConfirmacaoPermitida();
+        LocalDateTime limiteConfirmacao = LocalDateTime.of(evento.getData(), evento.getHoraInicio()).minusHours(prazoConfirmacaoHoras);
+        if (!LocalDateTime.now().isBefore(limiteConfirmacao)) {
+            throw new RegraNegocioException(
+                    "O prazo para confirmar a vaga terminou (ate 24h antes do inicio do evento).");
+        }
 
         int confirmadas = inscricaoRepository.contarConfirmadasPorEvento(eventoId);
         if (confirmadas >= evento.getCapacidadeMaxima()) {
@@ -176,11 +191,25 @@ public class InscricaoService {
         ComprovanteResponse comprovante = comprovanteService.emitir(evento, participante, inscricaoSalva);
 
         notificacaoService.notificarMudancaDeStatus(participante, evento, inscricaoSalva);
+        this.notificarVagasPreenchidas(evento);
 
         InscricaoResponse response = new InscricaoResponse(inscricaoSalva, comprovante);
         response.setNomeParticipante(participante.getNome());
 
         return response;
+    }
+
+    private void notificarVagasPreenchidas(Evento evento) {
+        if(this.inscricaoRepository.contarConfirmadasPorEvento(evento.getId()) >= evento.getCapacidadeMaxima()) {
+            List<Inscricao> inscricoesPendentes = this.inscricaoRepository.listarPendentes().stream()
+                    .filter(inscricao -> inscricao.getIdEvento() == evento.getId())
+                    .toList();
+            for (Inscricao inscricao : inscricoesPendentes) {
+                Participante participante = buscarParticipanteOuFalhar(inscricao.getParticipanteId());
+                this.notificacaoService.notificarVagasEsgotadas(participante, evento, inscricao);
+                this.cancelarInscricao(evento.getId(), inscricao.getParticipanteId(), new InscricaoCancelarRequest());
+            }
+        }
     }
 
     public void cancelarInscricao(int eventoId, UUID participanteId, InscricaoCancelarRequest request) {

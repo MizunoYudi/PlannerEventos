@@ -33,6 +33,29 @@ public class NotificadorSMS implements Notificador {
     }
 
     @Override
+    public void notificarPrazoConfirmacao(Participante participante, Evento evento, Inscricao inscricao, String tempoRestante) {
+        if (simularFalha) {
+            throw new IllegalStateException("Servico de SMS indisponivel (falha simulada)");
+        }
+        log.info("[SMS] Para: {} | Confirme sua vaga em '{}' em ate {} (inscricao {}).",
+                participante.getNome(),
+                evento.getTitulo(),
+                tempoRestante,
+                inscricao.getId());
+    }
+
+    @Override
+    public void notificarVagasEsgotadas(Participante participante, Evento evento, Inscricao inscricao) {
+        if (simularFalha) {
+            throw new IllegalStateException("Servico de SMS indisponivel (falha simulada)");
+        }
+        log.info("[SMS] Para: {} | As vagas para o evento '{}' foram esgotadas! A inscricao {} sera cancelada.",
+                participante.getNome(),
+                evento.getTitulo(),
+                inscricao.getId());
+    }
+
+    @Override
     public String getCanal() {
         return "SMS";
     }
