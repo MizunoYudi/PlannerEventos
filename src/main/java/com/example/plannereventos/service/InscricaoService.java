@@ -200,7 +200,7 @@ public class InscricaoService {
     }
 
     private void notificarVagasPreenchidas(Evento evento) {
-        if(this.listarPorEvento(evento.getId()).toArray().length >= evento.getCapacidadeMaxima()) {
+        if(this.inscricaoRepository.contarConfirmadasPorEvento(evento.getId()) >= evento.getCapacidadeMaxima()) {
             List<Inscricao> inscricoesPendentes = this.inscricaoRepository.listarPendentes().stream()
                     .filter(inscricao -> inscricao.getIdEvento() == evento.getId())
                     .toList();
