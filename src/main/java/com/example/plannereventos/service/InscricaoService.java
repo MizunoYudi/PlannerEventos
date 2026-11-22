@@ -15,12 +15,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.EnumMap;
 
 @Service
 public class InscricaoService {
@@ -194,11 +191,21 @@ public class InscricaoService {
         ComprovanteResponse comprovante = comprovanteService.emitir(evento, participante, inscricaoSalva);
 
         notificacaoService.notificarMudancaDeStatus(participante, evento, inscricaoSalva);
+        this.notificarVagasPreenchidas(evento);
 
         InscricaoResponse response = new InscricaoResponse(inscricaoSalva, comprovante);
         response.setNomeParticipante(participante.getNome());
 
         return response;
+    }
+
+    private void notificarVagasPreenchidas(Evento evento) {
+        if(this.listarPorEvento(evento.getId()).toArray().length >= evento.getCapacidadeMaxima())
+            for(Inscricao inscricao : this.inscricaoRepository.listarPendentes()) {
+                Participante participante = buscarParticipanteOuFalhar(inscricao.getParticipanteId());
+                this.notificacaoService.notificarVagasEsgotadas(participante, evento, inscricao);
+                this.cancelarInscricao(evento.getId(), inscricao.getParticipanteId(), new InscricaoCancelarRequest());
+            }
     }
 
     public void cancelarInscricao(int eventoId, UUID participanteId, InscricaoCancelarRequest request) {

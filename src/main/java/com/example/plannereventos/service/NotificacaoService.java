@@ -59,6 +59,20 @@ public class NotificacaoService {
         }
     }
 
+    public void notificarVagasEsgotadas(Participante participante, Evento evento, Inscricao inscricao) {
+        for (Notificador notificador : notificadores) {
+            try {
+                notificador.notificarVagasEsgotadas(participante, evento, inscricao);
+            } catch (RuntimeException ex) {
+                log.error("Falha ao enviar lembrete de prazo via {} para a inscricao {}: {}",
+                        notificador.getCanal(),
+                        inscricao.getId(),
+                        ex.getMessage(),
+                        ex);
+            }
+        }
+    }
+
     private static String formatarTempoRestante(Duration tempo) {
         long horas = tempo.toHours();
         long minutos = tempo.toMinutesPart();
