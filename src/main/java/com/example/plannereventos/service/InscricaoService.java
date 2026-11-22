@@ -10,7 +10,10 @@ import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
 import com.example.plannereventos.strategy.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,8 @@ public class InscricaoService {
     private final Map<ModalidadeEvento, CalculoValorFinalStrategy> estrategiasCalculo;
     private final ComprovanteService comprovanteService;
     private final NotificacaoService notificacaoService;
+    @Value("${notificacao.prazo.confirmacao-horas:24}")
+    private long prazoConfirmacaoHoras = 24;
 
     public InscricaoService(
             InscricaoRepository inscricaoRepository,
@@ -127,6 +132,11 @@ public class InscricaoService {
             throw new EventoJaIniciadoException(eventoId);
         }
 
+        if (!LocalDateTime.now().isBefore(inicioEvento.minusHours(prazoConfirmacaoHoras))) {
+            throw new RegraNegocioException(
+                    "Inscricoes encerradas: o prazo de confirmacao (24h antes do evento) ja passou.");
+        }
+
         if (inscricaoRepository.existeAtivaOuConfirmada(eventoId, participanteId)) {
             throw new InscricaoDuplicadaException(eventoId, participanteId);
         }
@@ -151,6 +161,9 @@ public class InscricaoService {
         Inscricao inscricaoSalva = inscricaoRepository.salvar(novaInscricao);
 
         InscricaoResponse response = new InscricaoResponse(inscricaoSalva);
+
+        notificacaoService.notificarPrazoConfirmacao(participante, evento, inscricaoSalva);
+
         response.setNomeParticipante(participante.getNome());
         return response;
     }
@@ -164,6 +177,11 @@ public class InscricaoService {
                 .orElseThrow(() -> new InscricaoNaoEncontradaException(eventoId, participanteId));
 
         inscricao.validarConfirmacaoPermitida();
+        LocalDateTime limiteConfirmacao = LocalDateTime.of(evento.getData(), evento.getHoraInicio()).minusHours(prazoConfirmacaoHoras);
+        if (!LocalDateTime.now().isBefore(limiteConfirmacao)) {
+            throw new RegraNegocioException(
+                    "O prazo para confirmar a vaga terminou (ate 24h antes do inicio do evento).");
+        }
 
         int confirmadas = inscricaoRepository.contarConfirmadasPorEvento(eventoId);
         if (confirmadas >= evento.getCapacidadeMaxima()) {

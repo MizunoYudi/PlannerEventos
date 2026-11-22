@@ -6,6 +6,7 @@ import com.example.plannereventos.model.Participante;
 import com.example.plannereventos.notificacao.Notificador;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -17,6 +18,9 @@ public class NotificacaoService {
     private static final Logger log = LoggerFactory.getLogger(NotificacaoService.class);
 
     private final List<Notificador> notificadores;
+
+    @Value("${notificacao.prazo.confirmacao-horas:24}")
+    private long prazoConfirmacaoHoras = 24;
 
     public NotificacaoService(List<Notificador> notificadores) {
         this.notificadores = List.copyOf(notificadores);
@@ -38,10 +42,10 @@ public class NotificacaoService {
     }
 
     public void notificarPrazoConfirmacao(Participante participante, Evento evento, Inscricao inscricao) {
-        LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), evento.getHoraInicio());
-        LocalDateTime limiteConfirmacao = inicioEvento.minus(Duration.ofHours(24));
+        LocalDateTime limiteConfirmacao = LocalDateTime.of(evento.getData(), evento.getHoraInicio()).minusHours(prazoConfirmacaoHoras);
         Duration tempoRestante = Duration.between(LocalDateTime.now(), limiteConfirmacao);
         String tempoFormatado = formatarTempoRestante(tempoRestante);
+
         for (Notificador notificador : notificadores) {
             try {
                 notificador.notificarPrazoConfirmacao(participante, evento, inscricao, tempoFormatado);

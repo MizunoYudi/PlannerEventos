@@ -76,4 +76,10 @@ public class InscricaoRepository {
         canceladas.forEach(inscricao -> inscricao.cancelar(motivo));
         return canceladas;
     }
+
+    public List<Inscricao> listarPendentes() {
+        return storage.values().stream()
+                .filter(i -> i.getStatus() == StatusInscricao.PENDENTE)
+                .toList();
+    }
 }
