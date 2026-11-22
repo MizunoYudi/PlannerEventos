@@ -200,12 +200,16 @@ public class InscricaoService {
     }
 
     private void notificarVagasPreenchidas(Evento evento) {
-        if(this.listarPorEvento(evento.getId()).toArray().length >= evento.getCapacidadeMaxima())
-            for(Inscricao inscricao : this.inscricaoRepository.listarPendentes()) {
+        if(this.listarPorEvento(evento.getId()).toArray().length >= evento.getCapacidadeMaxima()) {
+            List<Inscricao> inscricoesPendentes = this.inscricaoRepository.listarPendentes().stream()
+                    .filter(inscricao -> inscricao.getIdEvento() == evento.getId())
+                    .toList();
+            for (Inscricao inscricao : inscricoesPendentes) {
                 Participante participante = buscarParticipanteOuFalhar(inscricao.getParticipanteId());
                 this.notificacaoService.notificarVagasEsgotadas(participante, evento, inscricao);
                 this.cancelarInscricao(evento.getId(), inscricao.getParticipanteId(), new InscricaoCancelarRequest());
             }
+        }
     }
 
     public void cancelarInscricao(int eventoId, UUID participanteId, InscricaoCancelarRequest request) {
