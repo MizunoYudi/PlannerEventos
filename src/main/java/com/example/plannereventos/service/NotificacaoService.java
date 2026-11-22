@@ -64,7 +64,7 @@ public class NotificacaoService {
             try {
                 notificador.notificarVagasEsgotadas(participante, evento, inscricao);
             } catch (RuntimeException ex) {
-                log.error("Falha ao enviar lembrete de prazo via {} para a inscricao {}: {}",
+                log.error("Falha ao enviar aviso de vagas esgotadas via {} para a inscricao {}: {}",
                         notificador.getCanal(),
                         inscricao.getId(),
                         ex.getMessage(),
