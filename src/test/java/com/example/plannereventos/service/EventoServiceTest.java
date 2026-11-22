@@ -17,7 +17,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -381,5 +383,41 @@ class EventoServiceTest {
 
         assertEquals("CANCELADO", response.getStatus());
         verifyNoInteractions(notificacaoService);
+    }
+
+    @Test
+    @DisplayName("Deve calcular o tempo restante ate o limite de confirmacao (inicio - 24h)")
+    void deveCalcularTempoRestanteParaConfirmacao() {
+        LocalDateTime inicio = LocalDateTime.now().plusHours(48);
+        Evento evento = criarEventoPadrao(1, "ATIVO", inicio.toLocalDate(), inicio.toLocalTime());
+
+        Duration restante = eventoService.obterTempoRestante(evento);
+
+        assertTrue(restante.compareTo(Duration.ofHours(24)) <= 0);
+        assertTrue(restante.compareTo(Duration.ofHours(23).plusMinutes(59)) > 0);
+    }
+
+    @Test
+    @DisplayName("Deve retornar tempo restante negativo quando o limite de confirmacao ja passou")
+    void deveRetornarTempoRestanteNegativoAposOLimite() {
+        LocalDateTime inicio = LocalDateTime.now().plusHours(10);
+        Evento evento = criarEventoPadrao(1, "ATIVO", inicio.toLocalDate(), inicio.toLocalTime());
+
+        Duration restante = eventoService.obterTempoRestante(evento);
+
+        assertTrue(restante.isNegative());
+    }
+
+    @Test
+    @DisplayName("Deve usar o numero de horas configurado para calcular o tempo restante")
+    void deveUsarPrazoConfiguradoNoTempoRestante() {
+        ReflectionTestUtils.setField(eventoService, "prazoConfirmacaoHoras", 48);
+        LocalDateTime inicio = LocalDateTime.now().plusHours(72);
+        Evento evento = criarEventoPadrao(1, "ATIVO", inicio.toLocalDate(), inicio.toLocalTime());
+
+        Duration restante = eventoService.obterTempoRestante(evento);
+
+        assertTrue(restante.compareTo(Duration.ofHours(24)) <= 0);
+        assertTrue(restante.compareTo(Duration.ofHours(23).plusMinutes(59)) > 0);
     }
 }

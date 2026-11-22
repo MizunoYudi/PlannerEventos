@@ -127,4 +127,36 @@ class InscricaoRepositoryTest {
         assertEquals("Motivo original", jaCancelada.getMotivoCancelamento());
         assertEquals(StatusInscricao.CONFIRMADA, outroEvento.getStatus());
     }
+
+    @Test
+    @DisplayName("listarPendentes deve devolver apenas inscricoes PENDENTE")
+    void deveListarApenasPendentes() {
+        Inscricao pendente = salvar(StatusInscricao.PENDENTE);
+        salvar(StatusInscricao.CONFIRMADA);
+        salvar(StatusInscricao.CANCELADA);
+
+        List<Inscricao> pendentes = repository.listarPendentes();
+
+        assertEquals(1, pendentes.size());
+        assertEquals(pendente.getId(), pendentes.get(0).getId());
+    }
+
+    @Test
+    @DisplayName("listarPendentes deve devolver lista vazia quando nao houver pendentes")
+    void deveDevolverListaVaziaSemPendentes() {
+        salvar(StatusInscricao.CONFIRMADA);
+        salvar(StatusInscricao.CANCELADA);
+
+        assertTrue(repository.listarPendentes().isEmpty());
+    }
+
+    @Test
+    @DisplayName("listarPendentes deve incluir pendentes de todos os eventos")
+    void deveListarPendentesDeVariosEventos() {
+        salvar(StatusInscricao.PENDENTE);
+        repository.salvar(new Inscricao(0, 2, UUID.randomUUID(), LocalDateTime.now(),
+                StatusInscricao.PENDENTE, LoteInscricao.LOTE_1, 100.0, null));
+
+        assertEquals(2, repository.listarPendentes().size());
+    }
 }
