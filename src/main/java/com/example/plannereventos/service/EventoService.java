@@ -1,5 +1,6 @@
 package com.example.plannereventos.service;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.dto.EventoCreateRequest;
 import com.example.plannereventos.dto.EventoResponse;
 import com.example.plannereventos.dto.EventoUpdateRequest;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Service
@@ -58,7 +60,7 @@ public class EventoService {
         evento.setValorBase(request.getValorBase());
         evento.setLoteAtivo(request.getLoteAtivo() != null ? request.getLoteAtivo() : LoteInscricao.LOTE_2);
         evento.setStatus(STATUS_ATIVO);
-        evento.setCriadoEm(LocalDateTime.now());
+        evento.setCriadoEm(LocalDateTime.now(Fuso.BRASILIA));
 
         eventoRepository.salvar(evento);
         return EventoResponse.fromEntity(evento);
@@ -95,7 +97,7 @@ public class EventoService {
         }
 
         LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), evento.getHoraInicio());
-        if (LocalDateTime.now().isAfter(inicioEvento)) {
+        if (LocalDateTime.now(Fuso.BRASILIA).isAfter(inicioEvento)) {
             throw new EventoJaIniciadoException(id);
         }
 
@@ -149,8 +151,8 @@ public class EventoService {
     }
 
     public Duration obterTempoRestante(Evento evento) {
-        LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), evento.getHoraInicio());
-        LocalDateTime limiteConfirmacao = inicioEvento.minus(Duration.ofHours(prazoConfirmacaoHoras));
-        return Duration.between(LocalDateTime.now(), limiteConfirmacao);
+        ZonedDateTime inicioEvento = ZonedDateTime.of(evento.getData(), evento.getHoraInicio(), Fuso.BRASILIA);
+        ZonedDateTime limiteConfirmacao = inicioEvento.minusHours(prazoConfirmacaoHoras);
+        return Duration.between(ZonedDateTime.now(Fuso.BRASILIA), limiteConfirmacao);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.plannereventos.repository;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.model.Participante;
 import org.springframework.stereotype.Repository;
 
@@ -17,7 +18,7 @@ public class ParticipanteRepository {
             participante.setId(UUID.randomUUID());
         }
         if (participante.getCriadoEm() == null) {
-            participante.setCriadoEm(LocalDateTime.now());
+            participante.setCriadoEm(LocalDateTime.now(Fuso.BRASILIA));
         }
         storage.put(participante.getId(), participante);
         return participante;

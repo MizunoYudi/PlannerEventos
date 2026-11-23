@@ -6,12 +6,11 @@ import com.example.plannereventos.model.Participante;
 import com.example.plannereventos.notificacao.Notificador;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Consumer;
 
 @Service
 public class NotificacaoService {
@@ -19,52 +18,39 @@ public class NotificacaoService {
 
     private final List<Notificador> notificadores;
 
-    @Value("${notificacao.prazo.confirmacao-horas:24}")
-    private long prazoConfirmacaoHoras = 24;
-
     public NotificacaoService(List<Notificador> notificadores) {
         this.notificadores = List.copyOf(notificadores);
     }
 
     public void notificarMudancaDeStatus(Participante participante, Evento evento, Inscricao inscricao) {
-        for (Notificador notificador : notificadores) {
-            try {
-                notificador.notificar(participante, evento, inscricao);
-            } catch (RuntimeException ex) {
-                log.error("Falha ao enviar notificacao via {} para a inscricao {} (status {}): {}",
-                        notificador.getCanal(),
-                        inscricao.getId(),
-                        inscricao.getStatus(),
-                        ex.getMessage(),
-                        ex);
-            }
-        }
+        dispararParaTodos("mudanca de status (" + inscricao.getStatus() + ")", inscricao,
+                notificador -> notificador.notificar(participante, evento, inscricao));
     }
 
-    public void notificarPrazoConfirmacao(Participante participante, Evento evento, Inscricao inscricao) {
-        LocalDateTime limiteConfirmacao = LocalDateTime.of(evento.getData(), evento.getHoraInicio()).minusHours(prazoConfirmacaoHoras);
-        Duration tempoRestante = Duration.between(LocalDateTime.now(), limiteConfirmacao);
-        String tempoFormatado = formatarTempoRestante(tempoRestante);
-
-        for (Notificador notificador : notificadores) {
-            try {
-                notificador.notificarPrazoConfirmacao(participante, evento, inscricao, tempoFormatado);
-            } catch (RuntimeException ex) {
-                log.error("Falha ao enviar lembrete de prazo via {} para a inscricao {}: {}",
-                        notificador.getCanal(),
-                        inscricao.getId(),
-                        ex.getMessage(),
-                        ex);
-            }
+    public void notificarPrazoConfirmacao(Participante participante, Evento evento,
+                                          Inscricao inscricao, Duration tempoRestante) {
+        if (tempoRestante.isNegative() || tempoRestante.isZero()) {
+            log.info("Prazo de confirmacao da inscricao {} ja encerrado; lembrete nao enviado.", inscricao.getId());
+            return;
         }
+
+        String tempoFormatado = formatarTempoRestante(tempoRestante);
+        dispararParaTodos("lembrete de prazo", inscricao,
+                notificador -> notificador.notificarPrazoConfirmacao(participante, evento, inscricao, tempoFormatado));
     }
 
     public void notificarVagasEsgotadas(Participante participante, Evento evento, Inscricao inscricao) {
+        dispararParaTodos("aviso de vagas esgotadas", inscricao,
+                notificador -> notificador.notificarVagasEsgotadas(participante, evento, inscricao));
+    }
+
+    private void dispararParaTodos(String tipo, Inscricao inscricao, Consumer<Notificador> envio) {
         for (Notificador notificador : notificadores) {
             try {
-                notificador.notificarVagasEsgotadas(participante, evento, inscricao);
+                envio.accept(notificador);
             } catch (RuntimeException ex) {
-                log.error("Falha ao enviar aviso de vagas esgotadas via {} para a inscricao {}: {}",
+                log.error("Falha ao enviar {} via {} para a inscricao {}: {}",
+                        tipo,
                         notificador.getCanal(),
                         inscricao.getId(),
                         ex.getMessage(),
@@ -79,6 +65,6 @@ public class NotificacaoService {
         if (horas > 0) {
             return minutos > 0 ? horas + "h e " + minutos + "min" : horas + "h";
         }
-        return Math.max(minutos, 1) + "min";
+        return minutos > 0 ? minutos + "min" : "menos de 1min";
     }
 }

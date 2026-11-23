@@ -1,5 +1,6 @@
 package com.example.plannereventos.service;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.dto.ParticipanteCreateRequest;
 import com.example.plannereventos.dto.ParticipanteResponse;
 import com.example.plannereventos.dto.ParticipanteUpdateRequest;
@@ -55,7 +56,7 @@ class ParticipanteServiceTest {
                 LocalDate.of(2000, 5, 15)
         );
         participanteSalvo.setCriadoEm(
-                LocalDateTime.now()
+                LocalDateTime.now(Fuso.BRASILIA)
         );
 
         when(participanteRepository.existePorEmail(
@@ -145,7 +146,7 @@ class ParticipanteServiceTest {
                 LocalDate.of(2001, 8, 10)
         );
         participante.setCriadoEm(
-                LocalDateTime.now()
+                LocalDateTime.now(Fuso.BRASILIA)
         );
 
         when(participanteRepository.buscarPorId(id))
@@ -229,7 +230,7 @@ class ParticipanteServiceTest {
                 LocalDate.of(1995, 3, 20)
         );
         participanteExistente.setCriadoEm(
-                LocalDateTime.now()
+                LocalDateTime.now(Fuso.BRASILIA)
         );
 
         ParticipanteUpdateRequest request

@@ -3,11 +3,8 @@ package com.example.plannereventos.notificacao;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.example.plannereventos.model.Evento;
-import com.example.plannereventos.model.Inscricao;
-import com.example.plannereventos.model.LoteInscricao;
-import com.example.plannereventos.model.Participante;
-import com.example.plannereventos.model.StatusInscricao;
+import com.example.plannereventos.config.Fuso;
+import com.example.plannereventos.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,7 +35,7 @@ class NotificadoresTest {
         evento.setId(1);
         evento.setTitulo("Semana de Tecnologia");
 
-        inscricao = new Inscricao(10, 1, participanteId, LocalDateTime.now(),
+        inscricao = new Inscricao(10, 1, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CONFIRMADA, LoteInscricao.PROMOCIONAL, 80.0, null);
     }
 

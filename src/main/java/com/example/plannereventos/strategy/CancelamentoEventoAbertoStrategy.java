@@ -1,5 +1,6 @@
 package com.example.plannereventos.strategy;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.exception.CancelamentoForaDoPrazoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.model.Evento;
@@ -39,7 +40,7 @@ public class CancelamentoEventoAbertoStrategy
                 evento.getHoraInicio()
         );
 
-        if (!LocalDateTime.now().isBefore(inicioEvento)) {
+        if (!LocalDateTime.now(Fuso.BRASILIA).isBefore(inicioEvento)) {
             throw new CancelamentoForaDoPrazoException();
         }
     }

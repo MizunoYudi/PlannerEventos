@@ -1,5 +1,6 @@
 package com.example.plannereventos.repository;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.model.LoteInscricao;
 import com.example.plannereventos.model.StatusInscricao;
@@ -11,7 +12,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InscricaoRepositoryTest {
 
@@ -31,7 +33,7 @@ class InscricaoRepositoryTest {
                 0,
                 EVENTO_ID,
                 participanteId,
-                LocalDateTime.now(),
+                LocalDateTime.now(Fuso.BRASILIA),
                 status,
                 LoteInscricao.LOTE_1,
                 100.0,
@@ -87,7 +89,7 @@ class InscricaoRepositoryTest {
     @DisplayName("RN17 - Cancelar inscrição confirmada deve liberar a vaga")
     void cancelarInscricaoConfirmadaDeveLiberarVaga() {
         InscricaoRepository repository = new InscricaoRepository();
-        Inscricao inscricao = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(),
+        Inscricao inscricao = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.PENDENTE, LoteInscricao.LOTE_1, 90.0, null);
         repository.salvar(inscricao);
 
@@ -105,13 +107,13 @@ class InscricaoRepositoryTest {
     void deveCancelarInscricoesAtivasDoEvento() {
         InscricaoRepository repository = new InscricaoRepository();
 
-        Inscricao pendente = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(),
+        Inscricao pendente = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.PENDENTE, LoteInscricao.LOTE_2, 0.0, null);
-        Inscricao confirmada = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(),
+        Inscricao confirmada = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CONFIRMADA, LoteInscricao.LOTE_2, 0.0, null);
-        Inscricao jaCancelada = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(),
+        Inscricao jaCancelada = new Inscricao(0, 1, UUID.randomUUID(), LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CANCELADA, LoteInscricao.LOTE_2, 0.0, "Motivo original");
-        Inscricao outroEvento = new Inscricao(0, 2, UUID.randomUUID(), LocalDateTime.now(),
+        Inscricao outroEvento = new Inscricao(0, 2, UUID.randomUUID(), LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CONFIRMADA, LoteInscricao.LOTE_2, 0.0, null);
 
         repository.salvar(pendente);
@@ -154,7 +156,7 @@ class InscricaoRepositoryTest {
     @DisplayName("listarPendentes deve incluir pendentes de todos os eventos")
     void deveListarPendentesDeVariosEventos() {
         salvar(StatusInscricao.PENDENTE);
-        repository.salvar(new Inscricao(0, 2, UUID.randomUUID(), LocalDateTime.now(),
+        repository.salvar(new Inscricao(0, 2, UUID.randomUUID(), LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.PENDENTE, LoteInscricao.LOTE_1, 100.0, null));
 
         assertEquals(2, repository.listarPendentes().size());

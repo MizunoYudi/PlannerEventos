@@ -1,10 +1,7 @@
 package com.example.plannereventos.scheduler;
 
-import com.example.plannereventos.model.Evento;
-import com.example.plannereventos.model.Inscricao;
-import com.example.plannereventos.model.LoteInscricao;
-import com.example.plannereventos.model.Participante;
-import com.example.plannereventos.model.StatusInscricao;
+import com.example.plannereventos.config.Fuso;
+import com.example.plannereventos.model.*;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
@@ -23,11 +20,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class LembretePrazoConfirmacaoSchedulerTest {
+
+    private static final Duration CINCO_HORAS = Duration.ofHours(5);
 
     @Mock
     private InscricaoRepository inscricaoRepository;
@@ -64,12 +63,14 @@ class LembretePrazoConfirmacaoSchedulerTest {
     }
 
     private Inscricao criarPendente(int id, int idEvento, UUID participanteId) {
-        return new Inscricao(id, idEvento, participanteId, LocalDateTime.now(),
+        return new Inscricao(id, idEvento, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.PENDENTE, LoteInscricao.LOTE_2, 100.0, null);
     }
 
+    // ===================== Lembrete do prazo =====================
+
     @Test
-    @DisplayName("Deve notificar inscricao PENDENTE com prazo de confirmacao em aberto")
+    @DisplayName("Deve notificar inscricao PENDENTE com prazo de confirmacao em aberto e marcar o lembrete")
     void deveNotificarPendenteDentroDoPrazo() {
         UUID participanteId = UUID.randomUUID();
         Evento evento = criarEvento(1, "ATIVO");
@@ -78,12 +79,14 @@ class LembretePrazoConfirmacaoSchedulerTest {
 
         when(inscricaoRepository.listarPendentes()).thenReturn(List.of(inscricao));
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
-        when(eventoService.obterTempoRestante(evento)).thenReturn(Duration.ofHours(5));
+        when(eventoService.obterTempoRestante(evento)).thenReturn(CINCO_HORAS);
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
 
         scheduler.notificarInscricoesPendentes();
 
-        verify(notificacaoService, times(1)).notificarPrazoConfirmacao(participante, evento, inscricao);
+        verify(notificacaoService, times(1)).notificarPrazoConfirmacao(participante, evento, inscricao, CINCO_HORAS);
+        assertNotNull(inscricao.getUltimoLembrete());
+        verify(inscricaoRepository).salvar(inscricao);
     }
 
     @Test
@@ -99,14 +102,49 @@ class LembretePrazoConfirmacaoSchedulerTest {
 
         when(inscricaoRepository.listarPendentes()).thenReturn(List.of(inscA, inscB));
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
-        when(eventoService.obterTempoRestante(evento)).thenReturn(Duration.ofHours(5));
+        when(eventoService.obterTempoRestante(evento)).thenReturn(CINCO_HORAS);
         when(participanteRepository.buscarPorId(participanteA)).thenReturn(Optional.of(pA));
         when(participanteRepository.buscarPorId(participanteB)).thenReturn(Optional.of(pB));
 
         scheduler.notificarInscricoesPendentes();
 
-        verify(notificacaoService).notificarPrazoConfirmacao(pA, evento, inscA);
-        verify(notificacaoService).notificarPrazoConfirmacao(pB, evento, inscB);
+        verify(notificacaoService).notificarPrazoConfirmacao(pA, evento, inscA, CINCO_HORAS);
+        verify(notificacaoService).notificarPrazoConfirmacao(pB, evento, inscB, CINCO_HORAS);
+    }
+
+    @Test
+    @DisplayName("Nao deve reenviar o lembrete antes do intervalo configurado")
+    void naoDeveReenviarAntesDoIntervalo() {
+        UUID participanteId = UUID.randomUUID();
+        Evento evento = criarEvento(1, "ATIVO");
+        Participante participante = criarParticipante(participanteId);
+        Inscricao inscricao = criarPendente(10, 1, participanteId);
+
+        when(inscricaoRepository.listarPendentes()).thenReturn(List.of(inscricao));
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
+        when(eventoService.obterTempoRestante(evento)).thenReturn(CINCO_HORAS);
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+
+        scheduler.notificarInscricoesPendentes();
+        scheduler.notificarInscricoesPendentes();
+
+        verify(notificacaoService, times(1)).notificarPrazoConfirmacao(participante, evento, inscricao, CINCO_HORAS);
+    }
+
+    @Test
+    @DisplayName("Nao deve reenviar o lembrete para inscricao ja lembrada")
+    void naoDeveReenviarLembreteJaEnviado() {
+        Evento evento = criarEvento(1, "ATIVO");
+        Inscricao inscricao = criarPendente(10, 1, UUID.randomUUID());
+        inscricao.registrarLembrete(LocalDateTime.now(Fuso.BRASILIA).minusMinutes(5));
+
+        when(inscricaoRepository.listarPendentes()).thenReturn(List.of(inscricao));
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
+        when(eventoService.obterTempoRestante(evento)).thenReturn(CINCO_HORAS);
+
+        scheduler.notificarInscricoesPendentes();
+
+        verifyNoInteractions(participanteRepository, notificacaoService);
     }
 
     @Test
@@ -119,35 +157,51 @@ class LembretePrazoConfirmacaoSchedulerTest {
         verifyNoInteractions(eventoRepository, eventoService, participanteRepository, notificacaoService);
     }
 
+    // ===================== Expiracao do prazo =====================
+
     @Test
-    @DisplayName("Nao deve notificar quando o prazo de confirmacao ja expirou")
-    void naoDeveNotificarQuandoPrazoExpirou() {
-        Inscricao inscricao = criarPendente(10, 1, UUID.randomUUID());
+    @DisplayName("Deve cancelar a inscricao e notificar o participante quando o prazo expirar")
+    void deveExpirarInscricaoQuandoPrazoExpirou() {
+        UUID participanteId = UUID.randomUUID();
         Evento evento = criarEvento(1, "ATIVO");
+        Participante participante = criarParticipante(participanteId);
+        Inscricao inscricao = criarPendente(10, 1, participanteId);
 
         when(inscricaoRepository.listarPendentes()).thenReturn(List.of(inscricao));
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
         when(eventoService.obterTempoRestante(evento)).thenReturn(Duration.ofMinutes(-1));
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
 
         scheduler.notificarInscricoesPendentes();
 
-        verifyNoInteractions(participanteRepository, notificacaoService);
+        assertEquals(StatusInscricao.CANCELADA, inscricao.getStatus());
+        assertEquals("Prazo de confirmacao expirado", inscricao.getMotivoCancelamento());
+        verify(inscricaoRepository).salvar(inscricao);
+        verify(notificacaoService).notificarMudancaDeStatus(participante, evento, inscricao);
+        verify(notificacaoService, never()).notificarPrazoConfirmacao(any(), any(), any(), any());
     }
 
     @Test
-    @DisplayName("Nao deve notificar quando o tempo restante for exatamente zero")
-    void naoDeveNotificarQuandoTempoRestanteForZero() {
-        Inscricao inscricao = criarPendente(10, 1, UUID.randomUUID());
+    @DisplayName("Deve expirar a inscricao quando o tempo restante for exatamente zero")
+    void deveExpirarInscricaoQuandoTempoRestanteForZero() {
+        UUID participanteId = UUID.randomUUID();
         Evento evento = criarEvento(1, "ATIVO");
+        Participante participante = criarParticipante(participanteId);
+        Inscricao inscricao = criarPendente(10, 1, participanteId);
 
         when(inscricaoRepository.listarPendentes()).thenReturn(List.of(inscricao));
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
         when(eventoService.obterTempoRestante(evento)).thenReturn(Duration.ZERO);
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
 
         scheduler.notificarInscricoesPendentes();
 
-        verifyNoInteractions(participanteRepository, notificacaoService);
+        assertEquals(StatusInscricao.CANCELADA, inscricao.getStatus());
+        verify(notificacaoService).notificarMudancaDeStatus(participante, evento, inscricao);
+        verify(notificacaoService, never()).notificarPrazoConfirmacao(any(), any(), any(), any());
     }
+
+    // ===================== Casos em que nada deve acontecer =====================
 
     @Test
     @DisplayName("Nao deve notificar quando o evento nao for encontrado")
@@ -184,13 +238,16 @@ class LembretePrazoConfirmacaoSchedulerTest {
 
         when(inscricaoRepository.listarPendentes()).thenReturn(List.of(inscricao));
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
-        when(eventoService.obterTempoRestante(evento)).thenReturn(Duration.ofHours(5));
+        when(eventoService.obterTempoRestante(evento)).thenReturn(CINCO_HORAS);
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.empty());
 
         scheduler.notificarInscricoesPendentes();
 
         verifyNoInteractions(notificacaoService);
+        assertNull(inscricao.getUltimoLembrete());
     }
+
+    // ===================== Resiliencia =====================
 
     @Test
     @DisplayName("Erro ao processar uma inscricao nao deve interromper as demais")
@@ -210,7 +267,7 @@ class LembretePrazoConfirmacaoSchedulerTest {
 
         assertDoesNotThrow(() -> scheduler.notificarInscricoesPendentes());
 
-        verify(notificacaoService).notificarPrazoConfirmacao(pB, evento2, inscB);
+        verify(notificacaoService).notificarPrazoConfirmacao(pB, evento2, inscB, Duration.ofHours(3));
     }
 
     @Test
@@ -224,16 +281,38 @@ class LembretePrazoConfirmacaoSchedulerTest {
 
         when(inscricaoRepository.listarPendentes()).thenReturn(List.of(inscA, inscB));
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
-        when(eventoService.obterTempoRestante(evento)).thenReturn(Duration.ofHours(5));
+        when(eventoService.obterTempoRestante(evento)).thenReturn(CINCO_HORAS);
         when(participanteRepository.buscarPorId(participanteA))
                 .thenReturn(Optional.of(criarParticipante(participanteA)));
         when(participanteRepository.buscarPorId(participanteB))
                 .thenReturn(Optional.of(criarParticipante(participanteB)));
         doThrow(new RuntimeException("falha no envio")).doNothing()
-                .when(notificacaoService).notificarPrazoConfirmacao(any(), any(), any());
+                .when(notificacaoService).notificarPrazoConfirmacao(any(), any(), any(), any());
 
         assertDoesNotThrow(() -> scheduler.notificarInscricoesPendentes());
 
-        verify(notificacaoService, times(2)).notificarPrazoConfirmacao(any(), any(), any());
+        verify(notificacaoService, times(2)).notificarPrazoConfirmacao(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Deve reenviar o lembrete quando o intervalo configurado ja passou")
+    void deveReenviarLembreteAposIntervalo() {
+        UUID participanteId = UUID.randomUUID();
+        Evento evento = criarEvento(1, "ATIVO");
+        Participante participante = criarParticipante(participanteId);
+        Inscricao inscricao = criarPendente(10, 1, participanteId);
+        LocalDateTime lembreteAnterior = LocalDateTime.now(Fuso.BRASILIA).minusMinutes(20);
+        inscricao.registrarLembrete(lembreteAnterior);
+
+        when(inscricaoRepository.listarPendentes()).thenReturn(List.of(inscricao));
+        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
+        when(eventoService.obterTempoRestante(evento)).thenReturn(CINCO_HORAS);
+        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
+
+        scheduler.notificarInscricoesPendentes();
+
+        verify(notificacaoService).notificarPrazoConfirmacao(participante, evento, inscricao, CINCO_HORAS);
+        assertTrue(inscricao.getUltimoLembrete().isAfter(lembreteAnterior));
+        verify(inscricaoRepository).salvar(inscricao);
     }
 }

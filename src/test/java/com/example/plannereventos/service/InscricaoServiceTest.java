@@ -1,5 +1,6 @@
 package com.example.plannereventos.service;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.dto.ComprovanteResponse;
 import com.example.plannereventos.dto.InscricaoCancelarRequest;
 import com.example.plannereventos.dto.InscricaoCreateRequest;
@@ -100,7 +101,7 @@ class InscricaoServiceTest {
         eventoPadrao = new Evento();
         eventoPadrao.setId(1);
         eventoPadrao.setTitulo("Workshop Spring Boot");
-        eventoPadrao.setData(LocalDate.now().plusDays(5));
+        eventoPadrao.setData(LocalDate.now(Fuso.BRASILIA).plusDays(5));
         eventoPadrao.setHoraInicio(LocalTime.of(19, 0));
         eventoPadrao.setCapacidadeMaxima(50);
         eventoPadrao.setStatus("ATIVO");
@@ -160,7 +161,7 @@ class InscricaoServiceTest {
     @DisplayName("RF24 / RN09 - Deve confirmar inscrição PENDENTE quando houver vagas disponíveis")
     void deveConfirmarInscricaoPendenteComVagasDisponiveis() {
         Inscricao inscricaoPendente = new Inscricao(
-                10, 1, participanteId, LocalDateTime.now(),
+                10, 1, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null
         );
 
@@ -183,7 +184,7 @@ class InscricaoServiceTest {
     void deveLancarExcecaoAoConfirmarSemVagas() {
         eventoPadrao.setCapacidadeMaxima(10);
         Inscricao inscricaoPendente = new Inscricao(
-                10, 1, participanteId, LocalDateTime.now(),
+                10, 1, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null
         );
 
@@ -201,7 +202,7 @@ class InscricaoServiceTest {
     @DisplayName("RF24 / RN10 - Deve lançar StatusInvalidoException ao tentar confirmar inscrição já CONFIRMADA ou CANCELADA")
     void deveLancarStatusInvalidoExceptionAoAlterarEstadoFinal() {
         Inscricao inscricaoConfirmada = new Inscricao(
-                10, 1, participanteId, LocalDateTime.now(),
+                10, 1, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CONFIRMADA, LoteInscricao.PROMOCIONAL, 80.0, null
         );
 
@@ -218,7 +219,7 @@ class InscricaoServiceTest {
     @DisplayName("RF24 / RN09 - Deve cancelar inscrição PENDENTE aplicando política de cancelamento da modalidade")
     void deveCancelarInscricaoPendente() {
         Inscricao inscricaoPendente = new Inscricao(
-                10, 1, participanteId, LocalDateTime.now(),
+                10, 1, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null
         );
         InscricaoCancelarRequest cancelRequest = new InscricaoCancelarRequest();
@@ -240,7 +241,7 @@ class InscricaoServiceTest {
     @DisplayName("RN16 - Deve cancelar inscrição CONFIRMADA aplicando política de cancelamento da modalidade")
     void deveCancelarInscricaoConfirmada() {
         Inscricao inscricaoConfirmada = new Inscricao(
-                10, 1, participanteId, LocalDateTime.now(),
+                10, 1, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CONFIRMADA, LoteInscricao.PROMOCIONAL, 80.0, null
         );
         InscricaoCancelarRequest cancelRequest = new InscricaoCancelarRequest();
@@ -261,7 +262,7 @@ class InscricaoServiceTest {
     @DisplayName("RN10 - Deve lançar StatusInvalidoException ao tentar cancelar inscrição já CANCELADA")
     void deveLancarExcecaoAoCancelarInscricaoJaCancelada() {
         Inscricao inscricaoCancelada = new Inscricao(
-                10, 1, participanteId, LocalDateTime.now(),
+                10, 1, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CANCELADA, LoteInscricao.PROMOCIONAL, 80.0, "Motivo anterior"
         );
 
@@ -278,7 +279,7 @@ class InscricaoServiceTest {
     @DisplayName("Deve listar inscrições por evento preenchendo o nome do participante")
     void deveListarInscricoesPorEvento() {
         Inscricao inscricao = new Inscricao(
-                10, 1, participanteId, LocalDateTime.now(),
+                10, 1, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CONFIRMADA, LoteInscricao.PROMOCIONAL, 80.0, null
         );
 
@@ -297,7 +298,7 @@ class InscricaoServiceTest {
     @DisplayName("Deve buscar inscrição por evento e participante")
     void deveBuscarInscricaoPorEventoEParticipante() {
         Inscricao inscricao = new Inscricao(
-                10, 1, participanteId, LocalDateTime.now(),
+                10, 1, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null
         );
 
@@ -314,7 +315,7 @@ class InscricaoServiceTest {
     }
 
     private Inscricao criarInscricao(StatusInscricao status) {
-        return new Inscricao(10, 1, participanteId, LocalDateTime.now(),
+        return new Inscricao(10, 1, participanteId, LocalDateTime.now(Fuso.BRASILIA),
                 status, LoteInscricao.PROMOCIONAL, 80.0, null);
     }
 
@@ -339,7 +340,7 @@ class InscricaoServiceTest {
     }
 
     private void definirInicioDoEvento(Duration ate) {
-        LocalDateTime inicio = LocalDateTime.now().plus(ate);
+        LocalDateTime inicio = LocalDateTime.now(Fuso.BRASILIA).plus(ate);
         eventoPadrao.setData(inicio.toLocalDate());
         eventoPadrao.setHoraInicio(inicio.toLocalTime());
     }
@@ -377,8 +378,8 @@ class InscricaoServiceTest {
     }
 
     @Test
-    @DisplayName("Prazo: deve notificar o prazo de confirmacao em todos os canais ao criar inscricao PENDENTE")
-    void deveNotificarPrazoDeConfirmacaoAoCriarInscricaoPendente() {
+    @DisplayName("Nao deve enviar lembrete ao inscrever: o envio e feito pelo agendamento")
+    void naoDeveEnviarLembreteDePrazoAoCriarInscricao() {
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
         when(inscricaoRepository.existeAtivaOuConfirmada(1, participanteId)).thenReturn(false);
@@ -388,12 +389,8 @@ class InscricaoServiceTest {
         InscricaoResponse response = inscricaoService.inscrever(1, requestInscricao());
 
         assertEquals("PENDENTE", response.getStatus());
-        verify(notificadorEmail, times(1))
-                .notificarPrazoConfirmacao(eq(participante), eq(eventoPadrao), any(Inscricao.class), anyString());
-        verify(notificadorSms, times(1))
-                .notificarPrazoConfirmacao(eq(participante), eq(eventoPadrao), any(Inscricao.class), anyString());
-        verify(notificadorEmail, never()).notificar(any(), any(), any());
-        verify(notificadorSms, never()).notificar(any(), any(), any());
+        verify(notificadorEmail, never()).notificarPrazoConfirmacao(any(), any(), any(), any());
+        verify(notificadorSms, never()).notificarPrazoConfirmacao(any(), any(), any(), any());
     }
 
     @Test
@@ -455,25 +452,6 @@ class InscricaoServiceTest {
         assertEquals(StatusInscricao.CANCELADA, inscricao.getStatus());
         verify(inscricaoRepository, times(1)).salvar(inscricao);
         verify(notificadorSms, times(1)).notificar(participante, eventoPadrao, inscricao);
-    }
-
-    @Test
-    @DisplayName("RN11: falha em um canal ao notificar o prazo nao deve impedir a inscricao")
-    void deveManterInscricaoMesmoComFalhaNoLembreteDePrazo() {
-        when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
-        when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
-        when(inscricaoRepository.existeAtivaOuConfirmada(1, participanteId)).thenReturn(false);
-        when(calculoPadraoStrategy.calcular(100.0, LoteInscricao.PROMOCIONAL)).thenReturn(80.0);
-        when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
-        doThrow(new IllegalStateException("Servico de SMS indisponivel"))
-                .when(notificadorSms).notificarPrazoConfirmacao(any(), any(), any(), any());
-
-        InscricaoResponse response = assertDoesNotThrow(() -> inscricaoService.inscrever(1, requestInscricao()));
-
-        assertEquals("PENDENTE", response.getStatus());
-        verify(inscricaoRepository, times(1)).salvar(any(Inscricao.class));
-        verify(notificadorEmail, times(1))
-                .notificarPrazoConfirmacao(eq(participante), eq(eventoPadrao), any(Inscricao.class), anyString());
     }
 
     @Test
@@ -618,7 +596,7 @@ class InscricaoServiceTest {
     @Test
     @DisplayName("RN15 - Deve recusar inscricao em evento ja iniciado")
     void deveRecusarInscricaoEmEventoJaIniciado() {
-        eventoPadrao.setData(LocalDate.now().minusDays(1));
+        eventoPadrao.setData(LocalDate.now(Fuso.BRASILIA).minusDays(1));
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
 
@@ -664,25 +642,28 @@ class InscricaoServiceTest {
         participanteB.setNome("Carlos Lima");
 
         Inscricao confirmando = criarInscricao(StatusInscricao.PENDENTE);
-        Inscricao pendenteMesmoEvento = new Inscricao(11, 1, participanteBId, LocalDateTime.now(),
+        Inscricao pendenteMesmoEvento = new Inscricao(11, 1, participanteBId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null);
-        Inscricao pendenteOutroEvento = new Inscricao(12, 2, participanteCId, LocalDateTime.now(),
+        Inscricao pendenteOutroEvento = new Inscricao(12, 2, participanteCId, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.PENDENTE, LoteInscricao.PROMOCIONAL, 80.0, null);
 
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPadrao));
         when(participanteRepository.buscarPorId(participanteId)).thenReturn(Optional.of(participante));
         when(participanteRepository.buscarPorId(participanteBId)).thenReturn(Optional.of(participanteB));
         when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteId)).thenReturn(Optional.of(confirmando));
-        when(inscricaoRepository.buscarPorEventoEParticipante(1, participanteBId)).thenReturn(Optional.of(pendenteMesmoEvento));
+        // 1a chamada (antes de confirmar): 1 de 2 vagas ocupada -> pode confirmar
+        // 2a chamada (depois de confirmar): 2 de 2 -> vagas esgotadas
         when(inscricaoRepository.contarConfirmadasPorEvento(1)).thenReturn(1, 2);
         when(inscricaoRepository.salvar(any(Inscricao.class))).thenAnswer(i -> i.getArgument(0));
-        lenient().when(inscricaoRepository.listarPorEvento(1)).thenReturn(List.of(confirmando, pendenteMesmoEvento));
         when(inscricaoRepository.listarPendentes()).thenReturn(List.of(pendenteMesmoEvento, pendenteOutroEvento));
 
         inscricaoService.confirmarInscricao(1, participanteId);
 
+        assertEquals(StatusInscricao.CONFIRMADA, confirmando.getStatus());
         assertEquals(StatusInscricao.CANCELADA, pendenteMesmoEvento.getStatus());
+        assertEquals("Vagas esgotadas", pendenteMesmoEvento.getMotivoCancelamento());
         assertEquals(StatusInscricao.PENDENTE, pendenteOutroEvento.getStatus());
+        verify(inscricaoRepository).salvar(pendenteMesmoEvento);
         verify(notificadorEmail).notificarVagasEsgotadas(participanteB, eventoPadrao, pendenteMesmoEvento);
         verify(notificadorSms).notificarVagasEsgotadas(participanteB, eventoPadrao, pendenteMesmoEvento);
         verify(notificadorEmail, never()).notificarVagasEsgotadas(any(), any(), eq(pendenteOutroEvento));

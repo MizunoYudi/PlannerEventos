@@ -1,5 +1,6 @@
 package com.example.plannereventos.dto;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.model.Inscricao;
 import com.example.plannereventos.model.LoteInscricao;
 import com.example.plannereventos.model.StatusInscricao;
@@ -9,7 +10,8 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,7 +21,7 @@ class InscricaoResponseTest {
     @DisplayName("Deve mapear Inscricao com ComprovanteResponse e cobrir todos os construtores e getters/setters")
     void deveCobrirConstrutoresGettersESetters() {
         UUID participanteId = UUID.randomUUID();
-        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime agora = LocalDateTime.now(Fuso.BRASILIA);
 
         Inscricao inscricao = new Inscricao(
                 10,

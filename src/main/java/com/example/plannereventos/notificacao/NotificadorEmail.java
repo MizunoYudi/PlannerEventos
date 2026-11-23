@@ -14,12 +14,16 @@ public class NotificadorEmail implements Notificador {
 
     @Override
     public void notificar(Participante participante, Evento evento, Inscricao inscricao) {
-        log.info("[E-MAIL] Para: {} | Ola, {}! Sua inscricao {} no evento '{}' esta {}.",
+        String motivo = inscricao.getMotivoCancelamento() != null  ? " Motivo: " + inscricao.getMotivoCancelamento() + "."
+                : "";
+
+        log.info("[E-MAIL] Para: {} | Ola, {}! Sua inscricao {} no evento '{}' esta {}.{}",
                 participante.getEmail(),
                 participante.getNome(),
                 inscricao.getId(),
                 evento.getTitulo(),
-                inscricao.getStatus());
+                inscricao.getStatus(),
+                motivo);
     }
 
     @Override

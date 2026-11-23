@@ -46,13 +46,18 @@ public class NotificadorSMS implements Notificador {
 
     @Override
     public void notificarVagasEsgotadas(Participante participante, Evento evento, Inscricao inscricao) {
+        String motivo = inscricao.getMotivoCancelamento() != null
+                ? " Motivo: " + inscricao.getMotivoCancelamento() + "."
+                : "";
+
         if (simularFalha) {
             throw new IllegalStateException("Servico de SMS indisponivel (falha simulada)");
         }
-        log.info("[SMS] Para: {} | As vagas para o evento '{}' foram esgotadas! A inscricao {} sera cancelada.",
+        log.info("[SMS] Para: {} | As vagas para o evento '{}' foram esgotadas! A inscricao {} sera cancelada. {}",
                 participante.getNome(),
                 evento.getTitulo(),
-                inscricao.getId());
+                inscricao.getId(),
+                motivo);
     }
 
     @Override
