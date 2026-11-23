@@ -1,5 +1,6 @@
 package com.example.plannereventos.service;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.dto.EventoCreateRequest;
 import com.example.plannereventos.dto.EventoResponse;
 import com.example.plannereventos.dto.EventoUpdateRequest;
@@ -62,7 +63,7 @@ class EventoServiceTest {
         evento.setCapacidadeMaxima(50);
         evento.setModalidade(ModalidadeEvento.ABERTO);
         evento.setStatus(status);
-        evento.setCriadoEm(LocalDateTime.now());
+        evento.setCriadoEm(LocalDateTime.now(Fuso.BRASILIA));
         return evento;
     }
 
@@ -72,7 +73,7 @@ class EventoServiceTest {
         EventoCreateRequest request = new EventoCreateRequest(
                 "Workshop de Clean Code",
                 "Boas práticas em Java",
-                LocalDate.now().plusDays(5),
+                LocalDate.now(Fuso.BRASILIA).plusDays(5),
                 LocalTime.of(14, 0),
                 LocalTime.of(16, 0),
                 "Auditório Principal",
@@ -98,7 +99,7 @@ class EventoServiceTest {
     @Test
     @DisplayName("Deve buscar evento por ID com sucesso")
     void deveBuscarEventoPorIdComSucesso() {
-        Evento evento = criarEventoPadrao(1, "ATIVO", LocalDate.now().plusDays(2), LocalTime.of(10, 0));
+        Evento evento = criarEventoPadrao(1, "ATIVO", LocalDate.now(Fuso.BRASILIA).plusDays(2), LocalTime.of(10, 0));
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
 
         EventoResponse response = eventoService.buscarPorId(1);
@@ -121,11 +122,11 @@ class EventoServiceTest {
     @Test
     @DisplayName("Deve atualizar evento ativo com sucesso")
     void deveAtualizarEventoComSucesso() {
-        Evento eventoExistente = criarEventoPadrao(1, "ATIVO", LocalDate.now().plusDays(2), LocalTime.of(10, 0));
+        Evento eventoExistente = criarEventoPadrao(1, "ATIVO", LocalDate.now(Fuso.BRASILIA).plusDays(2), LocalTime.of(10, 0));
         EventoUpdateRequest updateRequest = new EventoUpdateRequest();
         updateRequest.setTitulo("Título Atualizado");
         updateRequest.setDescricao("Nova Descrição");
-        updateRequest.setData(LocalDate.now().plusDays(3));
+        updateRequest.setData(LocalDate.now(Fuso.BRASILIA).plusDays(3));
         updateRequest.setHoraInicio(LocalTime.of(11, 0));
         updateRequest.setHoraFim(LocalTime.of(13, 0));
         updateRequest.setLocal("Sala B");
@@ -146,7 +147,7 @@ class EventoServiceTest {
     @Test
     @DisplayName("Deve lançar EventoCanceladoException ao tentar atualizar evento já cancelado")
     void deveLancarExcecaoAoAtualizarEventoCancelado() {
-        Evento eventoCancelado = criarEventoPadrao(1, "CANCELADO", LocalDate.now().plusDays(2), LocalTime.of(10, 0));
+        Evento eventoCancelado = criarEventoPadrao(1, "CANCELADO", LocalDate.now(Fuso.BRASILIA).plusDays(2), LocalTime.of(10, 0));
         EventoUpdateRequest updateRequest = new EventoUpdateRequest();
 
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoCancelado));
@@ -161,7 +162,7 @@ class EventoServiceTest {
     @Test
     @DisplayName("Deve cancelar evento ativo futuro com sucesso e cancelar as inscricoes")
     void deveCancelarEventoComSucesso() {
-        Evento eventoAtivo = criarEventoPadrao(1, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(15, 0));
+        Evento eventoAtivo = criarEventoPadrao(1, "ATIVO", LocalDate.now(Fuso.BRASILIA).plusDays(5), LocalTime.of(15, 0));
         String motivo = "Problemas técnicos no local";
 
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoAtivo));
@@ -178,7 +179,7 @@ class EventoServiceTest {
     @Test
     @DisplayName("Deve lançar EventoCanceladoException ao tentar cancelar evento que já se encontra cancelado")
     void deveLancarExcecaoAoCancelarEventoJaCancelado() {
-        Evento eventoJaCancelado = criarEventoPadrao(1, "CANCELADO", LocalDate.now().plusDays(5), LocalTime.of(15, 0));
+        Evento eventoJaCancelado = criarEventoPadrao(1, "CANCELADO", LocalDate.now(Fuso.BRASILIA).plusDays(5), LocalTime.of(15, 0));
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoJaCancelado));
 
         assertThrows(EventoCanceladoException.class, () -> {
@@ -191,7 +192,7 @@ class EventoServiceTest {
     @Test
     @DisplayName("Deve lançar EventoJaIniciadoException ao tentar cancelar evento no passado")
     void deveLancarExcecaoAoCancelarEventoJaIniciado() {
-        Evento eventoPassado = criarEventoPadrao(1, "ATIVO", LocalDate.now().minusDays(1), LocalTime.of(10, 0));
+        Evento eventoPassado = criarEventoPadrao(1, "ATIVO", LocalDate.now(Fuso.BRASILIA).minusDays(1), LocalTime.of(10, 0));
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(eventoPassado));
 
         assertThrows(EventoJaIniciadoException.class, () -> {
@@ -204,7 +205,7 @@ class EventoServiceTest {
     @Test
     @DisplayName("Deve calcular corretamente as vagas disponíveis")
     void deveConsultarVagasComSucesso() {
-        Evento evento = criarEventoPadrao(1, "ATIVO", LocalDate.now().plusDays(3), LocalTime.of(10, 0));
+        Evento evento = criarEventoPadrao(1, "ATIVO", LocalDate.now(Fuso.BRASILIA).plusDays(3), LocalTime.of(10, 0));
         evento.setCapacidadeMaxima(100);
 
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
@@ -223,8 +224,8 @@ class EventoServiceTest {
     @DisplayName("Deve listar todos os eventos cadastrados")
     void deveListarEventosComSucesso() {
         List<Evento> lista = List.of(
-                criarEventoPadrao(1, "ATIVO", LocalDate.now().plusDays(1), LocalTime.of(9, 0)),
-                criarEventoPadrao(2, "ATIVO", LocalDate.now().plusDays(2), LocalTime.of(14, 0))
+                criarEventoPadrao(1, "ATIVO", LocalDate.now(Fuso.BRASILIA).plusDays(1), LocalTime.of(9, 0)),
+                criarEventoPadrao(2, "ATIVO", LocalDate.now(Fuso.BRASILIA).plusDays(2), LocalTime.of(14, 0))
         );
         when(eventoRepository.listar()).thenReturn(lista);
 
@@ -241,7 +242,7 @@ class EventoServiceTest {
         EventoCreateRequest request = new EventoCreateRequest(
                 "Evento para alunos",
                 "Evento exclusivo",
-                LocalDate.now().plusDays(5),
+                LocalDate.now(Fuso.BRASILIA).plusDays(5),
                 LocalTime.of(14, 0),
                 LocalTime.of(16, 0),
                 "Auditorio",
@@ -273,7 +274,7 @@ class EventoServiceTest {
         EventoCreateRequest request = new EventoCreateRequest(
                 "Evento 18+",
                 "Evento restrito",
-                LocalDate.now().plusDays(5),
+                LocalDate.now(Fuso.BRASILIA).plusDays(5),
                 LocalTime.of(14, 0),
                 LocalTime.of(16, 0),
                 "Auditorio",
@@ -308,7 +309,7 @@ class EventoServiceTest {
     void deveCadastrarEventoComValorBaseELote() {
         EventoCreateRequest request = new EventoCreateRequest(
                 "Workshop Pago", "Evento com inscricao paga",
-                LocalDate.now().plusDays(5), LocalTime.of(14, 0), LocalTime.of(16, 0),
+                LocalDate.now(Fuso.BRASILIA).plusDays(5), LocalTime.of(14, 0), LocalTime.of(16, 0),
                 "Auditório", 50, ModalidadeEvento.EXCLUSIVO_ALUNOS, null
         );
         request.setValorBase(100.0);
@@ -327,7 +328,7 @@ class EventoServiceTest {
     void deveUsarLote2QuandoLoteNaoInformado() {
         EventoCreateRequest request = new EventoCreateRequest(
                 "Workshop", "Descricao",
-                LocalDate.now().plusDays(5), LocalTime.of(14, 0), LocalTime.of(16, 0),
+                LocalDate.now(Fuso.BRASILIA).plusDays(5), LocalTime.of(14, 0), LocalTime.of(16, 0),
                 "Auditório", 50, ModalidadeEvento.ABERTO, null
         );
 
@@ -341,7 +342,7 @@ class EventoServiceTest {
     @Test
     @DisplayName("RF25 - Deve notificar os participantes quando o evento for cancelado")
     void deveNotificarParticipantesAoCancelarEvento() {
-        Evento evento = criarEventoPadrao(1, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(15, 0));
+        Evento evento = criarEventoPadrao(1, "ATIVO", LocalDate.now(Fuso.BRASILIA).plusDays(5), LocalTime.of(15, 0));
 
         UUID idAna = UUID.randomUUID();
         UUID idBruno = UUID.randomUUID();
@@ -350,9 +351,9 @@ class EventoServiceTest {
         Participante bruno = new Participante();
         bruno.setId(idBruno);
 
-        Inscricao inscricaoAna = new Inscricao(1, 1, idAna, LocalDateTime.now(),
+        Inscricao inscricaoAna = new Inscricao(1, 1, idAna, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CANCELADA, LoteInscricao.LOTE_2, 0.0, "Evento cancelado");
-        Inscricao inscricaoBruno = new Inscricao(2, 1, idBruno, LocalDateTime.now(),
+        Inscricao inscricaoBruno = new Inscricao(2, 1, idBruno, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CANCELADA, LoteInscricao.LOTE_2, 0.0, "Evento cancelado");
 
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
@@ -370,9 +371,9 @@ class EventoServiceTest {
     @Test
     @DisplayName("RF25 - Nao deve falhar o cancelamento do evento quando um participante nao for encontrado")
     void deveCancelarEventoMesmoSemEncontrarParticipante() {
-        Evento evento = criarEventoPadrao(1, "ATIVO", LocalDate.now().plusDays(5), LocalTime.of(15, 0));
+        Evento evento = criarEventoPadrao(1, "ATIVO", LocalDate.now(Fuso.BRASILIA).plusDays(5), LocalTime.of(15, 0));
         UUID idInexistente = UUID.randomUUID();
-        Inscricao inscricao = new Inscricao(1, 1, idInexistente, LocalDateTime.now(),
+        Inscricao inscricao = new Inscricao(1, 1, idInexistente, LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CANCELADA, LoteInscricao.LOTE_2, 0.0, "Evento cancelado");
 
         when(eventoRepository.buscarPorId(1)).thenReturn(Optional.of(evento));
@@ -388,7 +389,7 @@ class EventoServiceTest {
     @Test
     @DisplayName("Deve calcular o tempo restante ate o limite de confirmacao (inicio - 24h)")
     void deveCalcularTempoRestanteParaConfirmacao() {
-        LocalDateTime inicio = LocalDateTime.now().plusHours(48);
+        LocalDateTime inicio = LocalDateTime.now(Fuso.BRASILIA).plusHours(48);
         Evento evento = criarEventoPadrao(1, "ATIVO", inicio.toLocalDate(), inicio.toLocalTime());
 
         Duration restante = eventoService.obterTempoRestante(evento);
@@ -400,7 +401,7 @@ class EventoServiceTest {
     @Test
     @DisplayName("Deve retornar tempo restante negativo quando o limite de confirmacao ja passou")
     void deveRetornarTempoRestanteNegativoAposOLimite() {
-        LocalDateTime inicio = LocalDateTime.now().plusHours(10);
+        LocalDateTime inicio = LocalDateTime.now(Fuso.BRASILIA).plusHours(10);
         Evento evento = criarEventoPadrao(1, "ATIVO", inicio.toLocalDate(), inicio.toLocalTime());
 
         Duration restante = eventoService.obterTempoRestante(evento);
@@ -412,7 +413,7 @@ class EventoServiceTest {
     @DisplayName("Deve usar o numero de horas configurado para calcular o tempo restante")
     void deveUsarPrazoConfiguradoNoTempoRestante() {
         ReflectionTestUtils.setField(eventoService, "prazoConfirmacaoHoras", 48);
-        LocalDateTime inicio = LocalDateTime.now().plusHours(72);
+        LocalDateTime inicio = LocalDateTime.now(Fuso.BRASILIA).plusHours(72);
         Evento evento = criarEventoPadrao(1, "ATIVO", inicio.toLocalDate(), inicio.toLocalTime());
 
         Duration restante = eventoService.obterTempoRestante(evento);

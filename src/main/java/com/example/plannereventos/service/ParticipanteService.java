@@ -1,5 +1,6 @@
 package com.example.plannereventos.service;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.dto.ParticipanteCreateRequest;
 import com.example.plannereventos.dto.ParticipanteResponse;
 import com.example.plannereventos.dto.ParticipanteUpdateRequest;
@@ -33,7 +34,7 @@ public class ParticipanteService {
         participante.setMatricula(request.getMatricula());
         participante.setMatriculaAtiva(request.getMatriculaAtiva());
         participante.setDataNascimento(request.getDataNascimento());
-        participante.setCriadoEm(LocalDateTime.now());
+        participante.setCriadoEm(LocalDateTime.now(Fuso.BRASILIA));
 
         Participante salvo = participanteRepository.salvar(participante);
         return ParticipanteResponse.fromEntity(salvo);

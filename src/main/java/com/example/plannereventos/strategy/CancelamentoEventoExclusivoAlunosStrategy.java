@@ -1,5 +1,6 @@
 package com.example.plannereventos.strategy;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.exception.CancelamentoForaDoPrazoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.model.Evento;
@@ -37,7 +38,7 @@ public class CancelamentoEventoExclusivoAlunosStrategy
 
         LocalDateTime prazoLimite = inicioEvento.minusHours(24);
 
-        if (LocalDateTime.now().isAfter(prazoLimite)) {
+        if (LocalDateTime.now(Fuso.BRASILIA).isAfter(prazoLimite)) {
             throw new CancelamentoForaDoPrazoException();
         }
     }

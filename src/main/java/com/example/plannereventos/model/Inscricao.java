@@ -3,6 +3,7 @@ package com.example.plannereventos.model;
 import com.example.plannereventos.exception.StatusInvalidoException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -15,6 +16,7 @@ public class Inscricao {
     private LoteInscricao loteAtivo;
     private double valorFinal;
     private String motivoCancelamento;
+    private LocalDateTime ultimoLembrete;
 
     @JsonCreator
     public Inscricao() {
@@ -55,6 +57,18 @@ public class Inscricao {
                     "Somente inscrições PENDENTE podem ser confirmadas. Status atual: " + this.status
             );
         }
+    }
+
+    public LocalDateTime getUltimoLembrete() {
+        return ultimoLembrete;
+    }
+
+    public boolean deveReceberLembrete(LocalDateTime agora, Duration intervalo) {
+        return ultimoLembrete == null || !agora.isBefore(ultimoLembrete.plus(intervalo));
+    }
+
+    public void registrarLembrete(LocalDateTime agora) {
+        this.ultimoLembrete = agora;
     }
 
     public int getId() { return id; }

@@ -1,5 +1,6 @@
 package com.example.plannereventos.service;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.dto.ComprovanteResponse;
 import com.example.plannereventos.dto.InscricaoCancelarRequest;
 import com.example.plannereventos.dto.InscricaoCreateRequest;
@@ -9,18 +10,24 @@ import com.example.plannereventos.model.*;
 import com.example.plannereventos.repository.EventoRepository;
 import com.example.plannereventos.repository.InscricaoRepository;
 import com.example.plannereventos.repository.ParticipanteRepository;
-import com.example.plannereventos.strategy.*;
+import com.example.plannereventos.strategy.CalculoValorFinalStrategy;
+import com.example.plannereventos.strategy.ElegibilidadeStrategy;
+import com.example.plannereventos.strategy.PoliticaCancelamentoStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 public class InscricaoService {
+
+    private static final String MOTIVO_VAGAS_ESGOTADAS = "Vagas esgotadas";
 
     private final InscricaoRepository inscricaoRepository;
     private final EventoRepository eventoRepository;
@@ -30,6 +37,7 @@ public class InscricaoService {
     private final Map<ModalidadeEvento, CalculoValorFinalStrategy> estrategiasCalculo;
     private final ComprovanteService comprovanteService;
     private final NotificacaoService notificacaoService;
+
     @Value("${notificacao.prazo.confirmacao-horas:24}")
     private long prazoConfirmacaoHoras = 24;
 
@@ -125,13 +133,14 @@ public class InscricaoService {
         }
 
         LocalDateTime inicioEvento = LocalDateTime.of(evento.getData(), evento.getHoraInicio());
-        if (!LocalDateTime.now().isBefore(inicioEvento)) {
+        if (!LocalDateTime.now(Fuso.BRASILIA).isBefore(inicioEvento)) {
             throw new EventoJaIniciadoException(eventoId);
         }
 
-        if (!LocalDateTime.now().isBefore(inicioEvento.minusHours(prazoConfirmacaoHoras))) {
+        if (prazoConfirmacaoEncerrado(evento)) {
             throw new RegraNegocioException(
-                    "Inscricoes encerradas: o prazo de confirmacao (24h antes do evento) ja passou.");
+                    "Inscricoes encerradas: o prazo de confirmacao (" + prazoConfirmacaoHoras
+                            + "h antes do evento) ja passou.");
         }
 
         if (inscricaoRepository.existeAtivaOuConfirmada(eventoId, participanteId)) {
@@ -150,7 +159,7 @@ public class InscricaoService {
         Inscricao novaInscricao = new Inscricao();
         novaInscricao.setIdEvento(eventoId);
         novaInscricao.setParticipanteId(participanteId);
-        novaInscricao.setDataCriacao(LocalDateTime.now());
+        novaInscricao.setDataCriacao(LocalDateTime.now(Fuso.BRASILIA));
         novaInscricao.setStatus(StatusInscricao.PENDENTE);
         novaInscricao.setLoteAtivo(loteAtivo);
         novaInscricao.setValorFinal(valorFinal);
@@ -158,9 +167,6 @@ public class InscricaoService {
         Inscricao inscricaoSalva = inscricaoRepository.salvar(novaInscricao);
 
         InscricaoResponse response = new InscricaoResponse(inscricaoSalva);
-
-        notificacaoService.notificarPrazoConfirmacao(participante, evento, inscricaoSalva);
-
         response.setNomeParticipante(participante.getNome());
         return response;
     }
@@ -174,10 +180,10 @@ public class InscricaoService {
                 .orElseThrow(() -> new InscricaoNaoEncontradaException(eventoId, participanteId));
 
         inscricao.validarConfirmacaoPermitida();
-        LocalDateTime limiteConfirmacao = LocalDateTime.of(evento.getData(), evento.getHoraInicio()).minusHours(prazoConfirmacaoHoras);
-        if (!LocalDateTime.now().isBefore(limiteConfirmacao)) {
+        if (prazoConfirmacaoEncerrado(evento)) {
             throw new RegraNegocioException(
-                    "O prazo para confirmar a vaga terminou (ate 24h antes do inicio do evento).");
+                    "O prazo para confirmar a vaga terminou (ate " + prazoConfirmacaoHoras
+                            + "h antes do inicio do evento).");
         }
 
         int confirmadas = inscricaoRepository.contarConfirmadasPorEvento(eventoId);
@@ -191,25 +197,12 @@ public class InscricaoService {
         ComprovanteResponse comprovante = comprovanteService.emitir(evento, participante, inscricaoSalva);
 
         notificacaoService.notificarMudancaDeStatus(participante, evento, inscricaoSalva);
-        this.notificarVagasPreenchidas(evento);
+        notificarVagasPreenchidas(evento);
 
         InscricaoResponse response = new InscricaoResponse(inscricaoSalva, comprovante);
         response.setNomeParticipante(participante.getNome());
 
         return response;
-    }
-
-    private void notificarVagasPreenchidas(Evento evento) {
-        if(this.inscricaoRepository.contarConfirmadasPorEvento(evento.getId()) >= evento.getCapacidadeMaxima()) {
-            List<Inscricao> inscricoesPendentes = this.inscricaoRepository.listarPendentes().stream()
-                    .filter(inscricao -> inscricao.getIdEvento() == evento.getId())
-                    .toList();
-            for (Inscricao inscricao : inscricoesPendentes) {
-                Participante participante = buscarParticipanteOuFalhar(inscricao.getParticipanteId());
-                this.notificacaoService.notificarVagasEsgotadas(participante, evento, inscricao);
-                this.cancelarInscricao(evento.getId(), inscricao.getParticipanteId(), new InscricaoCancelarRequest());
-            }
-        }
     }
 
     public void cancelarInscricao(int eventoId, UUID participanteId, InscricaoCancelarRequest request) {
@@ -235,6 +228,29 @@ public class InscricaoService {
         inscricao.cancelar(motivo);
         inscricaoRepository.salvar(inscricao);
         notificacaoService.notificarMudancaDeStatus(participante, evento, inscricao);
+    }
+
+    private void notificarVagasPreenchidas(Evento evento) {
+        if (inscricaoRepository.contarConfirmadasPorEvento(evento.getId()) < evento.getCapacidadeMaxima()) {
+            return;
+        }
+
+        List<Inscricao> pendentesDoEvento = inscricaoRepository.listarPendentes().stream()
+                .filter(inscricao -> inscricao.getIdEvento() == evento.getId())
+                .toList();
+
+        for (Inscricao inscricao : pendentesDoEvento) {
+            inscricao.cancelar(MOTIVO_VAGAS_ESGOTADAS);
+            inscricaoRepository.salvar(inscricao);
+            participanteRepository.buscarPorId(inscricao.getParticipanteId())
+                    .ifPresent(p -> notificacaoService.notificarVagasEsgotadas(p, evento, inscricao));
+        }
+    }
+
+    private boolean prazoConfirmacaoEncerrado(Evento evento) {
+        LocalDateTime limite = LocalDateTime.of(evento.getData(), evento.getHoraInicio())
+                .minusHours(prazoConfirmacaoHoras);
+        return !LocalDateTime.now(Fuso.BRASILIA).isBefore(limite);
     }
 
     private CalculoValorFinalStrategy obterEstrategiaCalculo(ModalidadeEvento modalidade) {
@@ -267,12 +283,6 @@ public class InscricaoService {
     private Participante buscarParticipanteOuFalhar(UUID participanteId) {
         return participanteRepository.buscarPorId(participanteId)
                 .orElseThrow(() -> new ParticipanteNaoEncontradoException(participanteId));
-    }
-
-    private void validarExistenciaEvento(int eventoId) {
-        if (!eventoRepository.existePorId(eventoId)) {
-            throw new EventoNaoEncontradoException(eventoId);
-        }
     }
 
     private void validarExistenciaParticipante(UUID participanteId) {

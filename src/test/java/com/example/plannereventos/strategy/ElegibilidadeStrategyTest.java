@@ -1,5 +1,6 @@
 package com.example.plannereventos.strategy;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.exception.DataNascimentoObrigatoriaException;
 import com.example.plannereventos.exception.EventoSemVagasException;
 import com.example.plannereventos.exception.IdadeNaoPermitidaException;
@@ -33,7 +34,7 @@ class ElegibilidadeStrategyTest {
         evento = new Evento();
         evento.setId(1);
         evento.setTitulo("Evento de Teste");
-        evento.setData(LocalDate.now().plusDays(10));
+        evento.setData(LocalDate.now(Fuso.BRASILIA).plusDays(10));
         evento.setHoraInicio(LocalTime.of(10, 0));
         evento.setCapacidadeMaxima(2);
 
@@ -42,7 +43,7 @@ class ElegibilidadeStrategyTest {
         participante.setNome("Ana Souza");
         participante.setMatricula("BV123456");
         participante.setMatriculaAtiva(true);
-        participante.setDataNascimento(LocalDate.now().minusYears(25));
+        participante.setDataNascimento(LocalDate.now(Fuso.BRASILIA).minusYears(25));
     }
 
     @Nested

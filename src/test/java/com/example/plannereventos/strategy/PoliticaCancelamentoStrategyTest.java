@@ -1,13 +1,10 @@
 package com.example.plannereventos.strategy;
 
+import com.example.plannereventos.config.Fuso;
 import com.example.plannereventos.exception.CancelamentoForaDoPrazoException;
 import com.example.plannereventos.exception.EventoNaoEncontradoException;
 import com.example.plannereventos.exception.MotivoCancelamentoObrigatorioException;
-import com.example.plannereventos.model.Evento;
-import com.example.plannereventos.model.Inscricao;
-import com.example.plannereventos.model.LoteInscricao;
-import com.example.plannereventos.model.ModalidadeEvento;
-import com.example.plannereventos.model.StatusInscricao;
+import com.example.plannereventos.model.*;
 import com.example.plannereventos.repository.EventoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,9 +14,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
@@ -30,7 +29,7 @@ class PoliticaCancelamentoStrategyTest {
 
     @BeforeEach
     void setUp() {
-        inscricao = new Inscricao(1, 1, UUID.randomUUID(), LocalDateTime.now(),
+        inscricao = new Inscricao(1, 1, UUID.randomUUID(), LocalDateTime.now(Fuso.BRASILIA),
                 StatusInscricao.CONFIRMADA, LoteInscricao.LOTE_2, 0.0, null);
     }
 
@@ -56,7 +55,7 @@ class PoliticaCancelamentoStrategyTest {
         @DisplayName("Deve permitir cancelamento antes do inicio do evento")
         void devePermitirAntesDoInicio() {
             when(eventoRepository.buscarPorId(1))
-                    .thenReturn(Optional.of(eventoComInicioEm(LocalDateTime.now().plusHours(1))));
+                    .thenReturn(Optional.of(eventoComInicioEm(LocalDateTime.now(Fuso.BRASILIA).plusHours(1))));
 
             assertDoesNotThrow(() -> strategy.validarCancelamento(inscricao, null));
         }
@@ -65,7 +64,7 @@ class PoliticaCancelamentoStrategyTest {
         @DisplayName("Deve recusar cancelamento apos o inicio do evento")
         void deveRecusarAposInicio() {
             when(eventoRepository.buscarPorId(1))
-                    .thenReturn(Optional.of(eventoComInicioEm(LocalDateTime.now().minusHours(1))));
+                    .thenReturn(Optional.of(eventoComInicioEm(LocalDateTime.now(Fuso.BRASILIA).minusHours(1))));
 
             assertThrows(CancelamentoForaDoPrazoException.class,
                     () -> strategy.validarCancelamento(inscricao, null));
@@ -101,7 +100,7 @@ class PoliticaCancelamentoStrategyTest {
         @DisplayName("Deve permitir cancelamento com mais de 24 horas de antecedencia")
         void devePermitirComMaisDe24Horas() {
             when(eventoRepository.buscarPorId(1))
-                    .thenReturn(Optional.of(eventoComInicioEm(LocalDateTime.now().plusHours(48))));
+                    .thenReturn(Optional.of(eventoComInicioEm(LocalDateTime.now(Fuso.BRASILIA).plusHours(48))));
 
             assertDoesNotThrow(() -> strategy.validarCancelamento(inscricao, null));
         }
@@ -110,7 +109,7 @@ class PoliticaCancelamentoStrategyTest {
         @DisplayName("Deve recusar cancelamento com menos de 24 horas de antecedencia")
         void deveRecusarComMenosDe24Horas() {
             when(eventoRepository.buscarPorId(1))
-                    .thenReturn(Optional.of(eventoComInicioEm(LocalDateTime.now().plusHours(12))));
+                    .thenReturn(Optional.of(eventoComInicioEm(LocalDateTime.now(Fuso.BRASILIA).plusHours(12))));
 
             assertThrows(CancelamentoForaDoPrazoException.class,
                     () -> strategy.validarCancelamento(inscricao, null));

@@ -1,4 +1,5 @@
 package com.example.plannereventos.dto;
+import com.example.plannereventos.config.Fuso;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,7 +14,7 @@ public class ErrorMessage {
     private String path;
 
     public ErrorMessage(int status, String error, List<String> mensagens, String path) {
-        this.timestamp = LocalDateTime.now();
+        this.timestamp = LocalDateTime.now(Fuso.BRASILIA);
         this.status = status;
         this.error = error;
         this.mensagens = mensagens;

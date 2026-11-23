@@ -67,7 +67,9 @@ corretamente. Os testes cobrem:
 - o ciclo de vida da inscrição (`PENDENTE` → `CONFIRMADA` ou `CANCELADA`);
 - o disparo das notificações e a resiliência a falhas no envio;
 - o prazo de confirmação da vaga: o cálculo do limite, a recusa de inscrições e confirmações fora do
-  prazo, a formatação do tempo restante e o agendador de lembretes;
+  prazo, a formatação do tempo restante, o reenvio periódico dos lembretes e a expiração automática
+  das inscrições pendentes;
+- o cancelamento das inscrições pendentes quando as vagas do evento se esgotam;
 - os cenários de erro (exceções personalizadas);
 - a emissão de comprovantes e a geração do hash do QR Code.
 
@@ -75,8 +77,8 @@ corretamente. Os testes cobrem:
 
 A cada push na `main` e a cada pull request, o GitHub Actions compila o projeto, roda os testes e
 envia a análise para o **SonarQube Cloud**. O pull request só pode ser integrado se passar no
-Quality Gate, que exige, entre outros critérios, cobertura de testes mínima de 80% e porcentagem mínima de 3% para
-código duplicado.
+Quality Gate, que exige, entre outros critérios, cobertura de testes mínima de 80% e no máximo 3% de código
+duplicado.
 
 ## Base da API
 
@@ -97,20 +99,26 @@ Todo evento possui uma modalidade, informada no campo `modalidade` do cadastro
 
 ## Ciclo de vida da inscrição
 
-
 - Toda inscrição nasce como **`PENDENTE`**. Uma inscrição pendente **não ocupa vaga**.
 - **`PENDENTE` → `CONFIRMADA`**: só é permitido se o evento ainda tiver vagas **e** se o prazo de
-  confirmação não tiver terminado (até 24 horas antes do início do evento). A inscrição confirmada
-  ocupa uma vaga e recebe o comprovante.
+  confirmação não tiver terminado (o prazo termina algumas horas antes do início do evento; veja
+  "Funcionalidade inovadora"). A inscrição confirmada ocupa uma vaga e recebe o comprovante.
 - **`PENDENTE` ou `CONFIRMADA` → `CANCELADA`**: aplica a política de cancelamento da modalidade do evento.
   Cancelar uma inscrição confirmada **libera a vaga**.
 - **`CANCELADA`** é estado final: não pode ser confirmada nem cancelada de novo.
 - Transições inválidas retornam `422` com a mensagem do motivo.
-- Não é possível se inscrever em um evento que começa em menos de 24 horas, porque o prazo de
-  confirmação já teria terminado (`422`).
+- Não é possível se inscrever em um evento cujo prazo de confirmação já terminou (`422`).
 - Quando um **evento** é cancelado, todas as inscrições ativas dele passam para `CANCELADA`, e os
   participantes são notificados.
 
+### Transições automáticas
+
+| De | Para | Quando | Motivo registrado |
+|---|---|---|---|
+| `PENDENTE` | `CANCELADA` | O prazo de confirmação vence sem que a inscrição seja confirmada | `Prazo de confirmacao expirado` |
+| `PENDENTE` | `CANCELADA` | A última vaga do evento é confirmada por outro participante | `Vagas esgotadas` |
+
+Nos dois casos, o participante é notificado por todos os canais.
 
 ## Lotes e valor da inscrição
 
@@ -131,10 +139,12 @@ inscrição é calculado no momento da inscrição, com o desconto do lote ativo
 
 O participante é notificado por todos os canais cadastrados nas seguintes situações:
 
-- quando uma inscrição passa para **`CONFIRMADA`** ou **`CANCELADA`**;
-- quando uma inscrição `PENDENTE` é criada e depois, periodicamente, com o **tempo restante para
-  confirmar a vaga** (veja "Funcionalidade inovadora");
-- quando as vagas do evento se esgotam, o que cancela as inscrições `PENDENTE` daquele evento.
+| Situação | Quem recebe |
+|---|---|
+| Inscrição **confirmada** | O participante da inscrição |
+| Inscrição **cancelada** (pelo participante, pelo cancelamento do evento ou por expiração do prazo) | O participante da inscrição |
+| **Lembrete de prazo**, periódico, com o tempo restante para confirmar | Participantes com inscrição `PENDENTE` |
+| **Vagas esgotadas**: a inscrição `PENDENTE` é cancelada com o motivo `Vagas esgotadas` | Participantes com inscrição `PENDENTE` no evento lotado |
 
 - **Canais:** e-mail (`NotificadorEmail`) e SMS (`NotificadorSMS`). O envio é simulado: a mensagem é
   registrada no log da aplicação.
@@ -142,8 +152,9 @@ O participante é notificado por todos os canais cadastrados nas seguintes situa
   `notificarPrazoConfirmacao(...)` (tempo restante para confirmar) e `notificarVagasEsgotadas(...)`.
 - **Extensível:** todo canal implementa a interface `Notificador`. Para criar um novo canal, basta
   adicionar uma classe anotada com `@Component` que implemente essa interface, sem alterar os serviços.
-- **Resiliente:** uma falha no envio não interrompe nem desfaz a mudança de status. A exceção é
-  capturada pelo `NotificacaoService`, registrada no log, e os demais canais continuam sendo notificados.
+- **Resiliente:** uma falha no envio não interrompe nem desfaz a mudança de status. Todos os envios
+  passam por um único ponto do `NotificacaoService` (`dispararParaTodos`): a exceção de um canal é
+  capturada e registrada no log, e os demais canais continuam sendo notificados.
 
 Exemplo do que aparece no log ao confirmar uma inscrição:
 
@@ -164,7 +175,7 @@ Ao confirmar uma inscrição, por exemplo, o log mostra:
 
 ```
 INFO  NotificadorEmail   : [E-MAIL] Para: maria.silva@example.com | Ola, Maria da Silva! Sua inscricao 1 no evento 'Semana de Tecnologia' esta CONFIRMADA.
-ERROR NotificacaoService : Falha ao enviar notificacao via SMS para a inscricao 1 (status CONFIRMADA): Servico de SMS indisponivel (falha simulada)
+ERROR NotificacaoService : Falha ao enviar mudanca de status (CONFIRMADA) via SMS para a inscricao 1: Servico de SMS indisponivel (falha simulada)
 java.lang.IllegalStateException: Servico de SMS indisponivel (falha simulada)
 	at com.example.plannereventos.notificacao.NotificadorSMS.notificar(NotificadorSMS.java:...)
 	...
@@ -190,40 +201,60 @@ O comprovante é gerado automaticamente quando a inscrição é **confirmada** e
 
 ## Funcionalidade inovadora
 
-### Lembrete de prazo para confirmar a vaga
+### Prazo de confirmação com lembretes periódicos e expiração automática
 
 Toda inscrição nasce `PENDENTE` e só ocupa vaga depois de confirmada. Para evitar que o participante
-esqueça de confirmar, o sistema informa **quanto tempo falta** para a confirmação e **exige** que ela
-aconteça até **24 horas antes do início do evento**.
+esqueça de confirmar, e que inscrições esquecidas fiquem pendentes para sempre, o sistema:
+
+1. define um **prazo** para a confirmação;
+2. envia **lembretes periódicos** com o tempo restante enquanto a inscrição estiver pendente;
+3. **cancela automaticamente** a inscrição quando o prazo vence, avisando o participante.
 
 **Regra do prazo**
 
-- Limite de confirmação = início do evento (`data` + `horaInicio`) − prazo configurado (padrão: 24 horas).
+- Limite de confirmação = início do evento (`data` + `horaInicio`) − `notificacao.prazo.confirmacao-horas`.
 - Dentro do prazo, `PATCH .../confirmar` funciona normalmente.
-- Após o limite, a confirmação é recusada com `422`.
+- Depois do limite, a confirmação é recusada com `422`.
 - Inscrever-se quando o limite já passou também é recusado com `422`.
-- Inscrições com o prazo vencido não recebem lembrete.
 
-**Quando o participante é avisado**
+**Lembretes periódicos**
 
-1. **Na inscrição:** assim que a inscrição `PENDENTE` é criada, o participante recebe a mensagem com o
-   tempo restante para confirmar.
-2. **Periodicamente:** o `LembretePrazoConfirmacaoScheduler`, anotado com `@Scheduled`, percorre todas as
-   inscrições `PENDENTE` e notifica aquelas cujo prazo ainda não venceu. Eventos cancelados e eventos ou
-   participantes inexistentes são ignorados.
+O `LembretePrazoConfirmacaoScheduler`, anotado com `@Scheduled`, roda a cada
+`notificacao.prazo.intervalo-ms` e percorre as inscrições `PENDENTE`:
 
-O aviso usa os mesmos canais do restante do sistema (e-mail e SMS), por meio do `NotificacaoService`.
-Se um canal falhar, o erro é registrado no log e os demais continuam sendo notificados. Uma falha em
-uma inscrição também não interrompe o processamento das outras.
+- se o participante ainda não recebeu nenhum lembrete, ou se o último foi enviado há pelo menos
+  `notificacao.prazo.intervalo-lembrete-minutos`, ele recebe um novo lembrete por e-mail e SMS;
+- a própria `Inscricao` guarda o horário do último lembrete e decide se já pode receber outro
+  (`deveReceberLembrete`);
+- eventos cancelados e eventos ou participantes inexistentes são ignorados.
 
-O tempo restante é exibido como `Xh e Ymin` (por exemplo, `47h e 59min`) ou apenas em minutos quando
-falta menos de 1 hora (mínimo de `1min`).
+O primeiro lembrete chega no primeiro ciclo do agendador depois da inscrição.
+
+**Expiração automática**
+
+Quando o prazo vence, a inscrição `PENDENTE` passa para `CANCELADA` com o motivo
+`Prazo de confirmacao expirado`, e o participante recebe a notificação de cancelamento. A partir daí,
+os lembretes param. Inscrições confirmadas não recebem lembretes e não expiram.
+
+**Resiliência**
+
+Os avisos usam os mesmos canais do restante do sistema, por meio do `NotificacaoService`. Se um canal
+falhar, o erro é registrado no log e os demais continuam. Uma falha em uma inscrição não interrompe o
+processamento das outras, e o lembrete que falhou é tentado de novo no ciclo seguinte.
+
+**Formato do tempo restante**
+
+`Xh e Ymin` (por exemplo, `2h e 30min`), apenas horas (`5h`), apenas minutos quando falta menos de 1
+hora (`45min`) ou `menos de 1min`.
 
 Exemplo do que aparece no log:
 
 ```
-[E-MAIL] Para: maria.silva@example.com | Ola, Maria da Silva! Voce tem 47h e 59min para CONFIRMAR sua vaga no evento 'Semana de Tecnologia' (inscricao 1).
-[SMS] Para: Maria da Silva | Confirme sua vaga em 'Semana de Tecnologia' em ate 47h e 59min (inscricao 1).
+[E-MAIL] Para: maria.silva@example.com | Ola, Maria da Silva! Voce tem 45min para CONFIRMAR sua vaga no evento 'Semana de Tecnologia' (inscricao 1).
+[SMS] Para: Maria da Silva | Confirme sua vaga em 'Semana de Tecnologia' em ate 45min (inscricao 1).
+...
+Inscricao 1 cancelada: prazo de confirmacao expirado.
+[E-MAIL] Para: maria.silva@example.com | Ola, Maria da Silva! Sua inscricao 1 no evento 'Semana de Tecnologia' esta CANCELADA.
 ```
 
 **Configuração**
@@ -231,28 +262,38 @@ Exemplo do que aparece no log:
 Em `application.properties`:
 
 ```properties
-# Horas antes do início do evento que definem o limite para confirmar a vaga (padrão: 24)
-notificacao.prazo.confirmacao-horas=24
+# Horas antes do início do evento em que o prazo de confirmação termina
+notificacao.prazo.confirmacao-horas=1
 
-# Intervalo entre as execuções do agendador de lembretes, em milissegundos
+# Intervalo entre lembretes para a mesma inscrição, em minutos
+notificacao.prazo.intervalo-lembrete-minutos=15
+
+# Frequência com que o agendador verifica as inscrições pendentes, em milissegundos (90 s)
 notificacao.prazo.intervalo-ms=90000
 ```
 
-> A cada execução do agendador, todas as inscrições pendentes dentro do prazo são notificadas. Com o
-> intervalo acima (1 minuto e 30 segundos), o participante recebe lembretes frequentes até confirmar ou o
-> prazo vencer. Esse valor facilita os testes locais; em um cenário real, use um intervalo maior.
+| Propriedade | Valor no projeto | Padrão no código | Sugestão para um cenário real |
+|---|---|---|---|
+| `notificacao.prazo.confirmacao-horas` | `1` | `24` | `24` |
+| `notificacao.prazo.intervalo-lembrete-minutos` | `15` | `15` | `360` (a cada 6 horas) |
+| `notificacao.prazo.intervalo-ms` | `90000` | — | `90000` |
+
 
 **Como testar**
 
-1. Cadastre um evento (`POST /api/eventos`) com `data` e `horaInicio` com **mais de 24 horas** de
-   antecedência.
-2. Cadastre um participante (`POST /api/participantes`).
-3. Inscreva o participante (`POST /api/eventos/{eventoId}/inscricoes`): o log mostra a primeira
-   notificação, por e-mail e SMS.
-4. Aguarde o próximo ciclo do agendador para ver o lembrete periódico.
-5. Confirme a inscrição (`PATCH .../confirmar`): retorna `200`.
-6. Para ver a recusa (`422`), use um evento que comece em **menos de 24 horas**: tanto a inscrição quanto
-   a confirmação são recusadas.
+1. Em `application.properties`, use `notificacao.prazo.intervalo-ms=10000` (10 s) e
+   `notificacao.prazo.intervalo-lembrete-minutos=1`, e reinicie a aplicação.
+2. Cadastre um evento (`POST /api/eventos`) que comece daqui a cerca de **1h10**: com o prazo de 1 hora,
+   a confirmação vence em uns 10 minutos.
+3. Cadastre dois participantes (`POST /api/participantes`) e inscreva os dois
+   (`POST /api/eventos/{eventoId}/inscricoes`).
+4. Acompanhe o log: um lembrete por minuto para cada um, com o tempo diminuindo.
+5. Confirme só um deles (`PATCH .../confirmar`): retorna `200`, e ele para de receber lembretes.
+6. Quando o prazo vencer, o log mostra o cancelamento do outro participante e a notificação de
+   `CANCELADA`. Consulte a inscrição (`GET .../inscricoes/{participanteId}`): status `CANCELADA` e
+   motivo `Prazo de confirmacao expirado`. Tentar confirmá-la retorna `422`.
+7. Para ver a recusa da inscrição, use um evento cujo prazo já passou (por exemplo, que comece daqui a
+   30 minutos): a inscrição retorna `422`.
 
 ## Endpoints
 
@@ -278,10 +319,10 @@ notificacao.prazo.intervalo-ms=90000
 ### Inscrições
 | Método | Rota | Descrição | Sucesso |
 |---|---|---|---|
-| POST | `/api/eventos/{eventoId}/inscricoes` | Inscrever participante (status `PENDENTE`) e avisar o prazo para confirmar | `201` |
+| POST | `/api/eventos/{eventoId}/inscricoes` | Inscrever participante (status `PENDENTE`) | `201` |
 | GET | `/api/eventos/{eventoId}/inscricoes` | Listar inscrições do evento (com o nome do participante) | `200` |
 | GET | `/api/eventos/{eventoId}/inscricoes/{participanteId}` | Consultar inscrição | `200` |
-| PATCH | `/api/eventos/{eventoId}/inscricoes/{participanteId}/confirmar` | Confirmar inscrição até 24h antes do evento (emite o comprovante) | `200` |
+| PATCH | `/api/eventos/{eventoId}/inscricoes/{participanteId}/confirmar` | Confirmar inscrição dentro do prazo de confirmação (emite o comprovante) | `200` |
 | PATCH | `/api/eventos/{eventoId}/inscricoes/{participanteId}` | Cancelar inscrição | `204` |
 
 ## Corpo das Principais Requisições
@@ -443,9 +484,11 @@ Exemplo de mensagem quando o prazo de confirmação já terminou:
 
 ```json
 "mensagens": [
-  "O prazo para confirmar a vaga terminou (ate 24h antes do inicio do evento)."
+  "O prazo para confirmar a vaga terminou (ate 1h antes do inicio do evento)."
 ]
 ```
+
+O número de horas da mensagem acompanha o valor de `notificacao.prazo.confirmacao-horas`.
 
 ## Arquitetura e princípios SOLID
 
@@ -455,7 +498,7 @@ e **strategies** (regras que variam por modalidade).
 
 | Princípio | Onde aparece no projeto |
 |---|---|
-| **SRP** (Responsabilidade Única) | Controllers só tratam HTTP; services orquestram; a entidade `Inscricao` protege as próprias transições de status; o `NotificacaoService` só dispara notificações; o `QrCodeHashService` só gera o hash; o `LembretePrazoConfirmacaoScheduler` só decide quem deve ser lembrado e delega o envio ao `NotificacaoService`. |
+| **SRP** (Responsabilidade Única) | Controllers só tratam HTTP; services orquestram; a entidade `Inscricao` protege as próprias transições de status; o `NotificacaoService` só dispara notificações; o `QrCodeHashService` só gera o hash; o `LembretePrazoConfirmacaoScheduler` só orquestra o ciclo do prazo: a regra de reenvio fica na `Inscricao`, o cálculo do tempo restante no `EventoService` e o envio no `NotificacaoService`. |
 | **OCP** (Aberto/Fechado) | Elegibilidade, cancelamento, comprovante e cálculo por lote são estratégias escolhidas por modalidade, por meio de um `Map`. Uma modalidade nova ou um novo canal de notificação entram com uma classe nova, sem alterar os serviços. |
 | **LSP** (Substituição de Liskov) | Qualquer implementação de `ElegibilidadeStrategy`, `PoliticaCancelamentoStrategy`, `EmissorComprovanteStrategy`, `CalculoValorFinalStrategy` ou `Notificador` pode substituir a interface sem quebrar o comportamento esperado. |
 | **ISP** (Segregação de Interfaces) | A geração de QR Code fica numa interface separada (`GeradorQrCode`). O emissor de comprovante simples não é obrigado a implementá-la, então nunca lança `UnsupportedOperationException`. |
