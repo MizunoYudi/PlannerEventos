@@ -67,8 +67,6 @@ class LembretePrazoConfirmacaoSchedulerTest {
                 StatusInscricao.PENDENTE, LoteInscricao.LOTE_2, 100.0, null);
     }
 
-    // ===================== Lembrete do prazo =====================
-
     @Test
     @DisplayName("Deve notificar inscricao PENDENTE com prazo de confirmacao em aberto e marcar o lembrete")
     void deveNotificarPendenteDentroDoPrazo() {
@@ -157,7 +155,6 @@ class LembretePrazoConfirmacaoSchedulerTest {
         verifyNoInteractions(eventoRepository, eventoService, participanteRepository, notificacaoService);
     }
 
-    // ===================== Expiracao do prazo =====================
 
     @Test
     @DisplayName("Deve cancelar a inscricao e notificar o participante quando o prazo expirar")
@@ -200,8 +197,6 @@ class LembretePrazoConfirmacaoSchedulerTest {
         verify(notificacaoService).notificarMudancaDeStatus(participante, evento, inscricao);
         verify(notificacaoService, never()).notificarPrazoConfirmacao(any(), any(), any(), any());
     }
-
-    // ===================== Casos em que nada deve acontecer =====================
 
     @Test
     @DisplayName("Nao deve notificar quando o evento nao for encontrado")
@@ -246,8 +241,6 @@ class LembretePrazoConfirmacaoSchedulerTest {
         verifyNoInteractions(notificacaoService);
         assertNull(inscricao.getUltimoLembrete());
     }
-
-    // ===================== Resiliencia =====================
 
     @Test
     @DisplayName("Erro ao processar uma inscricao nao deve interromper as demais")

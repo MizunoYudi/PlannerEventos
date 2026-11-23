@@ -54,8 +54,6 @@ class NotificacaoServiceTest {
                 StatusInscricao.PENDENTE, LoteInscricao.LOTE_2, 100.0, null);
     }
 
-    // ===================== Mudanca de status =====================
-
     @Nested
     @DisplayName("notificarMudancaDeStatus")
     class MudancaDeStatus {
@@ -92,8 +90,6 @@ class NotificacaoServiceTest {
             verify(sms).notificar(participante, evento, inscricao);
         }
     }
-
-    // ===================== Prazo de confirmacao =====================
 
     @Nested
     @DisplayName("notificarPrazoConfirmacao")
@@ -162,8 +158,6 @@ class NotificacaoServiceTest {
             verify(email).notificarPrazoConfirmacao(participante, evento, inscricao, "3h");
         }
     }
-
-    // ===================== Vagas esgotadas =====================
 
     @Nested
     @DisplayName("notificarVagasEsgotadas")
